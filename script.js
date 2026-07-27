@@ -234,13 +234,11 @@ function renderAdminOrders() {
     });
 }
 
-// === 新增：刪除單筆訂單功能 ===
+// === 刪除單筆訂單功能 ===
 function deleteOrder(index) {
     if (confirm(`確定要刪除「訂單編號 #${index + 1}」嗎？`)) {
-        // 從陣列中移除該筆訂單
         savedOrders.splice(index, 1);
         
-        // 更新雲端資料庫
         db.ref('restaurant_orders').set(savedOrders).then(() => {
             alert("已成功刪除該筆訂單！");
         }).catch(error => {

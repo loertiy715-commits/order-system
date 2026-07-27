@@ -200,13 +200,11 @@ ul {
 
 /* === 新增：手機版專屬排版 (當螢幕寬度小於 768px 時觸發) === */
 @media (max-width: 768px) {
-    /* 1. 語系按鈕改成直排 */
     .lang-buttons {
         flex-direction: column;
         align-items: stretch;
     }
     
-    /* 2. 頂部按鈕區塊微調 */
     .header {
         flex-direction: column;
         gap: 10px;
@@ -216,18 +214,15 @@ ul {
         width: 100%;
     }
 
-    /* 3. 餐點改成「上圖下文」 */
     .menu-item {
         flex-direction: column;
     }
     
-    /* 4. 圖片寬度改為滿版 */
     .menu-item img {
         width: 100%;
         height: 250px;
     }
     
-    /* 5. 購物車按鈕滿版 */
     .add-action {
         flex-direction: column;
         align-items: stretch;
@@ -238,7 +233,6 @@ ul {
         margin-bottom: 10px;
     }
     
-    /* 6. 後台刪除按鈕改到下一行 */
     .admin-menu-item {
         flex-direction: column;
         align-items: flex-start;
@@ -249,7 +243,6 @@ ul {
         width: 100%;
     }
     
-    /* 7. 管理員登入按鈕改為相對位置，避免擋住內容 */
     .admin-login-btn {
         position: relative;
         bottom: 0;
