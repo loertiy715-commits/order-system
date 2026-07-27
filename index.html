@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>平板點餐系統</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- 畫面一：選擇語系 -->
+    <div id="lang-screen" class="screen">
+        <h1>請選擇語言 / Select Language</h1>
+        <div class="lang-buttons">
+            <button onclick="chooseLang('zh')">中文</button>
+            <button onclick="chooseLang('en')">English</button>
+            <button onclick="chooseLang('jp')">日本語</button>
+            <button onclick="chooseLang('kr')">한국어</button>
+        </div>
+        <button class="admin-login-btn" onclick="adminLogin()">⚙️ 管理員登入</button>
+    </div>
+
+    <!-- 畫面二：點餐畫面 -->
+    <div id="menu-screen" class="screen" style="display: none;">
+        <div class="header">
+            <button onclick="backToLang()">⬅️ 返回上一頁 (更改語言)</button>
+            <button onclick="showCart()">🛒 購物車 (<span id="cart-count">0</span>)</button>
+        </div>
+        <div id="menu-container"></div>
+    </div>
+
+    <!-- 畫面三：購物車畫面 -->
+    <div id="cart-screen" class="screen" style="display: none;">
+        <div class="header">
+            <button onclick="backToMenu()">⬅️ 返回上一頁 (繼續點餐)</button>
+        </div>
+        <h2>購物車 (訂單明細)</h2>
+        <ul id="cart-list"></ul>
+        <div class="cart-actions">
+            <button onclick="checkout()" style="background: red; color: white; font-size: 20px; padding: 10px 20px;">送出訂單</button>
+        </div>
+    </div>
+
+    <!-- 畫面四：管理員後台介面 -->
+    <div id="admin-screen" class="screen" style="display: none;">
+        <div class="header">
+            <button onclick="logoutAdmin()">⬅️ 登出並返回首頁</button>
+            <button onclick="clearOrders()" style="background: red; color: white;">🗑️ 清空所有歷史訂單</button>
+        </div>
+        <h2>管理員後台</h2>
+        
+        <!-- 新增餐點表單 -->
+        <div class="admin-section">
+            <h3>➕ 新增菜單餐點</h3>
+            <div class="add-item-form">
+                <label>1. 餐點圖片 (上傳):</label>
+                <input type="file" id="new-img" accept="image/*">
+
+                <label>2. 餐點名稱 (中文):</label>
+                <input type="text" id="new-name" placeholder="例如：滷肉飯">
+
+                <label>3. 餐點簡介:</label>
+                <input type="text" id="new-desc" placeholder="例如：台灣經典國民美食">
+
+                <label>4. 價格 (NT$):</label>
+                <input type="number" id="new-price" min="0" placeholder="例如：50">
+
+                <button onclick="addNewItem()" class="save-btn">儲存新餐點</button>
+            </div>
+        </div>
+
+        <!-- 新功能：刪除餐點列表 -->
+        <div class="admin-section">
+            <h3>📝 管理現有菜單 (刪除餐點)</h3>
+            <div id="admin-menu-list"></div>
+        </div>
+
+        <div class="admin-section">
+            <h3>📊 銷售數量統計</h3>
+            <div class="chart-container">
+                <canvas id="salesChart"></canvas>
+            </div>
+        </div>
+
+        <div class="admin-section">
+            <h3>📝 詳細訂單列表</h3>
+            <div id="admin-orders"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
