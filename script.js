@@ -220,15 +220,33 @@ function renderAdminOrders() {
     
     container.innerHTML = "";
     savedOrders.forEach((order, index) => {
-        let orderHTML = `<div class="order-card">
+        let orderHTML = `<div class="order-card" style="position: relative;">
             <h3>訂單編號 #${index + 1} <span>(${order.time})</span></h3>
             <ul>`;
         order.items.forEach(item => {
             orderHTML += `<li>${item.name} x ${item.quantity} (NT$ ${item.price * item.quantity})</li>`;
         });
-        orderHTML += `</ul><h4>總計金額: NT$ ${order.total}</h4></div>`;
+        orderHTML += `</ul>
+            <h4>總計金額: NT$ ${order.total}</h4>
+            <button onclick="deleteOrder(${index})" class="delete-btn" style="margin-top: 10px;">🗑️ 刪除此筆訂單</button>
+        </div>`;
         container.innerHTML += orderHTML;
     });
+}
+
+// === 新增：刪除單筆訂單功能 ===
+function deleteOrder(index) {
+    if (confirm(`確定要刪除「訂單編號 #${index + 1}」嗎？`)) {
+        // 從陣列中移除該筆訂單
+        savedOrders.splice(index, 1);
+        
+        // 更新雲端資料庫
+        db.ref('restaurant_orders').set(savedOrders).then(() => {
+            alert("已成功刪除該筆訂單！");
+        }).catch(error => {
+            alert("刪除失敗：" + error);
+        });
+    }
 }
 
 function renderSalesChart() {
