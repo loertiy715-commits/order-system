@@ -3,9 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>平板點餐系統</title>
+    <title>Banana 點餐系統</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Firebase 的雲端連線工具 -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
     <!-- 畫面一：選擇語系 -->
@@ -49,27 +53,21 @@
         </div>
         <h2>管理員後台</h2>
         
-        <!-- 新增餐點表單 -->
         <div class="admin-section">
             <h3>➕ 新增菜單餐點</h3>
             <div class="add-item-form">
                 <label>1. 餐點圖片 (上傳):</label>
                 <input type="file" id="new-img" accept="image/*">
-
                 <label>2. 餐點名稱 (中文):</label>
                 <input type="text" id="new-name" placeholder="例如：滷肉飯">
-
                 <label>3. 餐點簡介:</label>
                 <input type="text" id="new-desc" placeholder="例如：台灣經典國民美食">
-
                 <label>4. 價格 (NT$):</label>
                 <input type="number" id="new-price" min="0" placeholder="例如：50">
-
                 <button onclick="addNewItem()" class="save-btn">儲存新餐點</button>
             </div>
         </div>
 
-        <!-- 新功能：刪除餐點列表 -->
         <div class="admin-section">
             <h3>📝 管理現有菜單 (刪除餐點)</h3>
             <div id="admin-menu-list"></div>

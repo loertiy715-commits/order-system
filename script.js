@@ -1,3 +1,19 @@
+// === 1. 初始化 Firebase 連線金鑰 ===
+const firebaseConfig = {
+    apiKey: "AIzaSyBdD-WLkR8qv3PwH5olNCBiAi5wU_ojdfA",
+    authDomain: "bananaorder.firebaseapp.com",
+    databaseURL: "https://bananaorder-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "bananaorder",
+    storageBucket: "bananaorder.firebasestorage.app",
+    messagingSenderId: "556082870280",
+    appId: "1:556082870280:web:c6b1dc46c2494f215b79bd"
+};
+
+// 啟動資料庫
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// === 2. 預設資料與系統變數 ===
 const defaultMenu = [
     {
         id: "A001", price: 180,
@@ -17,15 +33,40 @@ const defaultMenu = [
     }
 ];
 
-let menuData = JSON.parse(localStorage.getItem('restaurant_menu'));
-if (!menuData) {
-    menuData = defaultMenu;
-    localStorage.setItem('restaurant_menu', JSON.stringify(menuData));
-}
-
+let menuData = [];
+let savedOrders = [];
 let currentLang = 'zh'; 
 let cart = []; 
 let salesChartInstance = null; 
+
+// === 3. 【雲端魔法】自動監聽菜單變化 ===
+db.ref('restaurant_menu').on('value', (snapshot) => {
+    let data = snapshot.val();
+    if (data) {
+        menuData = Array.isArray(data) ? data : Object.values(data);
+    } else {
+        menuData = defaultMenu;
+        db.ref('restaurant_menu').set(defaultMenu);
+    }
+    
+    if (document.getElementById('menu-screen').style.display === 'block') {
+        renderMenu();
+    }
+    if (document.getElementById('admin-screen').style.display === 'block') {
+        renderAdminMenu();
+    }
+});
+
+// === 4. 【雲端魔法】自動監聽訂單變化 ===
+db.ref('restaurant_orders').on('value', (snapshot) => {
+    let data = snapshot.val();
+    savedOrders = data ? (Array.isArray(data) ? data : Object.values(data)) : [];
+    
+    if (document.getElementById('admin-screen').style.display === 'block') {
+        renderAdminOrders();
+        renderSalesChart();
+    }
+});
 
 // === 畫面切換與返回 ===
 function chooseLang(lang) {
@@ -123,13 +164,12 @@ function showCart() {
     cartList.innerHTML += `<h3>總計: NT$ ${total}</h3>`;
 }
 
+// === 送出訂單 (寫入雲端) ===
 function checkout() {
     if (cart.length === 0) {
         alert("購物車是空的喔！");
         return;
     }
-
-    let savedOrders = JSON.parse(localStorage.getItem('restaurant_orders')) || [];
     
     const newOrder = {
         time: new Date().toLocaleString(),
@@ -137,15 +177,18 @@ function checkout() {
         total: cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
     };
     
-    savedOrders.push(newOrder);
-    localStorage.setItem('restaurant_orders', JSON.stringify(savedOrders));
-
-    alert("訂單已送出！");
-    cart = []; 
-    updateCartCount();
+    const updatedOrders = [...savedOrders, newOrder];
     
-    document.getElementById('cart-screen').style.display = 'none';
-    document.getElementById('lang-screen').style.display = 'block'; 
+    db.ref('restaurant_orders').set(updatedOrders).then(() => {
+        alert("訂單已送出！老闆已經收到通知囉！");
+        cart = []; 
+        updateCartCount();
+        
+        document.getElementById('cart-screen').style.display = 'none';
+        document.getElementById('lang-screen').style.display = 'block'; 
+    }).catch(error => {
+        alert("連線失敗，請確認網路狀態：" + error);
+    });
 }
 
 // === 管理員後台 ===
@@ -156,7 +199,7 @@ function adminLogin() {
         document.getElementById('admin-screen').style.display = 'block';
         renderAdminOrders();
         renderSalesChart();
-        renderAdminMenu(); // 登入時載入菜單列表
+        renderAdminMenu(); 
     } else if (password !== null) {
         alert("密碼錯誤！");
     }
@@ -169,7 +212,6 @@ function logoutAdmin() {
 
 function renderAdminOrders() {
     const container = document.getElementById('admin-orders');
-    let savedOrders = JSON.parse(localStorage.getItem('restaurant_orders')) || [];
     
     if (savedOrders.length === 0) {
         container.innerHTML = "<p>目前沒有任何訂單紀錄。</p>";
@@ -190,7 +232,6 @@ function renderAdminOrders() {
 }
 
 function renderSalesChart() {
-    let savedOrders = JSON.parse(localStorage.getItem('restaurant_orders')) || [];
     let salesData = {}; 
 
     savedOrders.forEach(order => {
@@ -233,15 +274,13 @@ function renderSalesChart() {
 
 function clearOrders() {
     if (confirm("⚠️ 確定要清空所有的歷史訂單嗎？這個動作無法復原！")) {
-        localStorage.removeItem('restaurant_orders');
-        renderAdminOrders(); 
-        renderSalesChart(); 
+        db.ref('restaurant_orders').remove().then(() => {
+            alert("歷史訂單已清空！");
+        });
     }
 }
 
-// === 新增/刪除 餐點邏輯 ===
-
-// 渲染後台的餐點列表
+// === 新增/刪除 餐點邏輯 (同步雲端) ===
 function renderAdminMenu() {
     const container = document.getElementById('admin-menu-list');
     container.innerHTML = '';
@@ -262,20 +301,13 @@ function renderAdminMenu() {
     });
 }
 
-// 刪除特定餐點
 function deleteMenuItem(itemId) {
     if (confirm("確定要刪除這道餐點嗎？前台菜單也會同步移除喔！")) {
-        // 過濾掉要刪除的餐點，保留其他餐點
-        menuData = menuData.filter(item => item.id !== itemId);
+        const updatedMenu = menuData.filter(item => item.id !== itemId);
         
-        // 更新 LocalStorage
-        localStorage.setItem('restaurant_menu', JSON.stringify(menuData));
-        
-        // 重新渲染後台列表與前台菜單
-        renderAdminMenu();
-        renderMenu();
-        
-        alert("已成功刪除！");
+        db.ref('restaurant_menu').set(updatedMenu).then(() => {
+            alert("已成功刪除！客人手機上的菜單也會同步消失。");
+        });
     }
 }
 
@@ -294,7 +326,6 @@ function addNewItem() {
     const reader = new FileReader();
 
     reader.onload = function(e) {
-        // 使用時間戳記當作隨機 ID，避免刪除後 ID 重複
         const newId = "A_" + new Date().getTime();
         
         const newItem = {
@@ -307,19 +338,15 @@ function addNewItem() {
             name_kr: name, desc_kr: desc
         };
 
-        menuData.push(newItem);
-        localStorage.setItem('restaurant_menu', JSON.stringify(menuData));
-
-        alert(`✅ 成功新增餐點：${name}！`);
-
-        document.getElementById('new-name').value = '';
-        document.getElementById('new-desc').value = '';
-        document.getElementById('new-price').value = '';
-        fileInput.value = '';
-
-        // 更新前台菜單與後台管理列表
-        renderMenu();
-        renderAdminMenu(); 
+        const updatedMenu = [...menuData, newItem];
+        
+        db.ref('restaurant_menu').set(updatedMenu).then(() => {
+            alert(`✅ 成功新增餐點：${name}！`);
+            document.getElementById('new-name').value = '';
+            document.getElementById('new-desc').value = '';
+            document.getElementById('new-price').value = '';
+            fileInput.value = '';
+        });
     };
 
     reader.readAsDataURL(file);
