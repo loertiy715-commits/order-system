@@ -127,7 +127,6 @@ const uiTexts = {
     }
 };
 
-// 分類多國語言對照表
 const categoriesMap = {
     "涼拌": { zh: "涼拌", en: "Cold Dishes", jp: "冷菜", kr: "냉채" },
     "生鮮": { zh: "生鮮", en: "Fresh Seafood", jp: "生鮮・刺身", kr: "생선회/신선" },
@@ -139,7 +138,6 @@ const categoriesMap = {
     "鐵板": { zh: "鐵板", en: "Teppanyaki", jp: "鉄板焼き", kr: "철판요리" }
 };
 
-// 預設菜單
 const defaultMenu = [
     {
         id: "A001", price: 180, category: "熱炒",
@@ -162,12 +160,13 @@ const defaultMenu = [
 let menuData = [];
 let savedOrders = [];
 let currentLang = 'zh'; 
-let currentCategory = 'all'; // 目前選中的分類
+let currentCategory = 'all';
 let cart = []; 
 let salesChartInstance = null; 
 
-// === 智慧自動翻譯輔助函式 ===
+// === 智慧自動翻譯函式 ===
 function smartTranslate(text, lang) {
+    if (!text) return "";
     if (lang === 'zh') return text;
     const foodDict = {
         "蝦子": { en: "Shrimp", jp: "エビ", kr: "새우" },
@@ -195,7 +194,6 @@ function smartTranslate(text, lang) {
     return translated;
 }
 
-// === 雲端即時監聽 ===
 db.ref('restaurant_menu').on('value', (snapshot) => {
     let data = snapshot.val();
     if (data) {
@@ -221,7 +219,6 @@ db.ref('restaurant_orders').on('value', (snapshot) => {
     }
 });
 
-// === 畫面與語言切換 ===
 function chooseLang(lang) {
     currentLang = lang;
     updateUITexts();
@@ -266,7 +263,6 @@ function backToMenu() {
     document.getElementById('menu-screen').style.display = 'block';
 }
 
-// === 渲染左右滑動分類列與菜單 ===
 function renderCategoryScroll() {
     const scrollContainer = document.getElementById('category-scroll');
     scrollContainer.innerHTML = '';
@@ -313,8 +309,9 @@ function renderFilteredMenu() {
     }
 
     filteredItems.forEach(item => {
-        let displayName = item[`name_${currentLang}`] || item.name_zh;
-        let displayDesc = item[`desc_${currentLang}`] || item.desc_zh;
+        // === 關鍵修正：如果資料庫沒有該語言翻譯，立刻用智慧翻譯即時補上！ ===
+        let displayName = item[`name_${currentLang}`] || smartTranslate(item.name_zh, currentLang);
+        let displayDesc = item[`desc_${currentLang}`] || smartTranslate(item.desc_zh, currentLang);
 
         let menuItemHTML = `
             <div class="menu-item">
@@ -411,7 +408,6 @@ function checkout() {
     });
 }
 
-// === 管理員後台 ===
 function adminLogin() {
     const password = prompt("請輸入管理員密碼：");
     if (password === "0905852418") {
@@ -528,7 +524,6 @@ function deleteMenuItem(itemId) {
     }
 }
 
-// === 新增餐點 (含自動多國翻譯與分類) ===
 function addNewItem() {
     const name = document.getElementById('new-name').value;
     const desc = document.getElementById('new-desc').value;
@@ -547,7 +542,6 @@ function addNewItem() {
     reader.onload = function(e) {
         const newId = "A_" + new Date().getTime();
         
-        // 透過智慧翻譯自動產生英、日、韓版本
         const newItem = {
             id: newId,
             price: price,
@@ -561,7 +555,7 @@ function addNewItem() {
 
         const updatedMenu = [...menuData, newItem];
         db.ref('restaurant_menu').set(updatedMenu).then(() => {
-            alert(`✅ 成功新增餐點：${name} (${category})，已自動翻譯完成！`);
+            alert(`✅ 成功新增餐點：${name} (${category})！`);
             document.getElementById('new-name').value = '';
             document.getElementById('new-desc').value = '';
             document.getElementById('new-price').value = '';
