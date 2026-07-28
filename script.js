@@ -142,18 +142,12 @@ const defaultMenu = [
     {
         id: "A001", price: 180, category: "熱炒",
         image_url: "https://images.unsplash.com/photo-1585032226651-759b368d7246?w=400", 
-        name_zh: "經典牛肉麵", desc_zh: "慢熬牛骨湯頭搭配手工麵條",
-        name_en: "Classic Beef Noodle Soup", desc_en: "Slow-cooked beef bone broth with hand-pulled noodles",
-        name_jp: "定番の牛肉麺", desc_jp: "じっくり煮込んだ牛骨スープと手作り麺",
-        name_kr: "클래식 우육면", desc_kr: "천천히 끓인 소사골 육수와 수제 면"
+        name_zh: "經典牛肉麵", desc_zh: "慢熬牛骨湯頭搭配手工麵條"
     },
     {
         id: "A002", price: 60, category: "涼拌",
         image_url: "https://images.unsplash.com/photo-1563227812-0ea4c22e6cc8?w=400", 
-        name_zh: "珍珠奶茶", desc_zh: "台灣特選紅茶與Q彈珍珠",
-        name_en: "Bubble Milk Tea", desc_en: "Taiwanese black tea with chewy tapioca pearls",
-        name_jp: "タピオカミルクティー", desc_jp: "台湾特選紅茶とモチモチタピオカ",
-        name_kr: "버블 밀크티", desc_kr: "대만 특선 홍차와 쫄깃한 타피오카 펄"
+        name_zh: "珍珠奶茶", desc_zh: "台灣特選紅茶與Q彈珍珠"
     }
 ];
 
@@ -164,32 +158,56 @@ let currentCategory = 'all';
 let cart = []; 
 let salesChartInstance = null; 
 
-// === 智慧自動翻譯函式 ===
+// === 擴充版智慧自動翻譯引擎 (涵蓋各種食材與烹調法) ===
 function smartTranslate(text, lang) {
     if (!text) return "";
     if (lang === 'zh') return text;
-    const foodDict = {
+
+    // 涵蓋廣泛的餐飲字典
+    const culinaryDict = {
+        // 食材
         "蝦子": { en: "Shrimp", jp: "エビ", kr: "새우" },
+        "蝦": { en: "Shrimp", jp: "エビ", kr: "새우" },
         "牛肉": { en: "Beef", jp: "牛肉", kr: "소고기" },
         "豬肉": { en: "Pork", jp: "豚肉", kr: "돼지고기" },
         "雞肉": { en: "Chicken", jp: "鶏肉", kr: "닭고기" },
         "魚": { en: "Fish", jp: "魚", kr: "생선" },
+        "蛤蜊": { en: "Clams", jp: "ハマグリ", kr: "조개" },
+        "中卷": { en: "Squid", jp: "イカ", kr: "오징어" },
+        "透抽": { en: "Squid", jp: "イカ", kr: "오징어" },
+        "豆腐": { en: "Tofu", jp: "豆腐", kr: "두부" },
+        "蛋": { en: "Egg", jp: "卵", kr: "계란" },
+        "高麗菜": { en: "Cabbage", jp: "キャベツ", kr: "양배추" },
+        "空心菜": { en: "Water Spinach", jp: "空心菜", kr: "공심채" },
+        
+        // 烹調方式與風味
         "燙": { en: "Boiled", jp: "湯引き", kr: "데친" },
         "炒": { en: "Stir-fried", jp: "炒め", kr: "볶은" },
         "烤": { en: "Grilled", jp: "焼き", kr: "구운" },
+        "炸": { en: "Fried", jp: "揚げ", kr: "튀긴" },
+        "清蒸": { en: "Steamed", jp: "蒸し", kr: "찜" },
+        "紅燒": { en: "Braised", jp: "醤油煮込み", kr: "조림" },
+        "三杯": { en: "Three-Cup", jp: "三杯", kr: "싼베이" },
+        "鐵板": { en: "Teppanyaki", jp: "鉄板焼き", kr: "철판" },
+        "宮保": { en: "Kung Pao", jp: "宮保", kr: "쿵보" },
+        "麻婆": { en: "Mapo", jp: "麻婆", kr: "마파" },
+        "蒜泥": { en: "Garlic Sauce", jp: "ニンニクソース", kr: "마늘소스" },
+        "沙茶": { en: "Sacha Sauce", jp: "沙茶ソース", kr: "사차소스" },
         "新鮮": { en: "Fresh", jp: "新鮮な", kr: "신선한" }
     };
 
     let translated = text;
-    for (let key in foodDict) {
+    for (let key in culinaryDict) {
         if (translated.includes(key)) {
-            translated = translated.replace(key, foodDict[key][lang] || key);
+            translated = translated.replace(new RegExp(key, 'g'), culinaryDict[key][lang] || key);
         }
     }
+
+    // 如果字典裡完全沒有對應到，給出得體的通用後綴
     if (translated === text) {
-        if (lang === 'en') return text + " (Dish)";
-        if (lang === 'jp') return text + " (料理)";
-        if (lang === 'kr') return text + " (요리)";
+        if (lang === 'en') return text + " (Special Dish)";
+        if (lang === 'jp') return text + " (特製料理)";
+        if (lang === 'kr') return text + " (특선 요리)";
     }
     return translated;
 }
@@ -309,9 +327,8 @@ function renderFilteredMenu() {
     }
 
     filteredItems.forEach(item => {
-        // === 關鍵修正：如果資料庫沒有該語言翻譯，立刻用智慧翻譯即時補上！ ===
-        let displayName = item[`name_${currentLang}`] || smartTranslate(item.name_zh, currentLang);
-        let displayDesc = item[`desc_${currentLang}`] || smartTranslate(item.desc_zh, currentLang);
+        let displayName = currentLang === 'zh' ? item.name_zh : smartTranslate(item.name_zh, currentLang);
+        let displayDesc = currentLang === 'zh' ? item.desc_zh : smartTranslate(item.desc_zh, currentLang);
 
         let menuItemHTML = `
             <div class="menu-item">
@@ -547,10 +564,8 @@ function addNewItem() {
             price: price,
             category: category,
             image_url: e.target.result,
-            name_zh: name, desc_zh: desc,
-            name_en: smartTranslate(name, 'en'), desc_en: smartTranslate(desc, 'en'),
-            name_jp: smartTranslate(name, 'jp'), desc_jp: smartTranslate(desc, 'jp'),
-            name_kr: smartTranslate(name, 'kr'), desc_kr: smartTranslate(desc, 'kr')
+            name_zh: name, 
+            desc_zh: desc
         };
 
         const updatedMenu = [...menuData, newItem];
