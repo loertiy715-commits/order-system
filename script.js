@@ -11,7 +11,6 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// === 多國語言介面字典 ===
 const uiTexts = {
     zh: {
         selectLang: "請選擇語言 / Select Language",
@@ -31,7 +30,7 @@ const uiTexts = {
         lblCategory: "4. 餐點分類:",
         lblPrice: "5. 價格 (NT$):",
         saveBtn: "儲存新餐點",
-        manageMenuTitle: "📝 管理現有菜單 (刪除餐點)",
+        manageMenuTitle: "📝 管理現有菜單 (編輯與刪除)",
         salesChartTitle: "📊 銷售數量統計",
         orderListTitle: "📝 詳細訂單列表",
         allCategory: "全部餐點",
@@ -59,7 +58,7 @@ const uiTexts = {
         lblCategory: "4. Category:",
         lblPrice: "5. Price (NT$):",
         saveBtn: "Save Dish",
-        manageMenuTitle: "📝 Manage Menu (Delete)",
+        manageMenuTitle: "📝 Manage Menu (Edit & Delete)",
         salesChartTitle: "📊 Sales Statistics",
         orderListTitle: "📝 Order List",
         allCategory: "All Dishes",
@@ -87,7 +86,7 @@ const uiTexts = {
         lblCategory: "4. カテゴリ:",
         lblPrice: "5. 価格 (NT$):",
         saveBtn: "メニューを保存",
-        manageMenuTitle: "📝 メニュー管理 (削除)",
+        manageMenuTitle: "📝 メニュー管理 (編集・削除)",
         salesChartTitle: "📊 売上統計",
         orderListTitle: "📝 注文リスト",
         allCategory: "すべて",
@@ -115,7 +114,7 @@ const uiTexts = {
         lblCategory: "4. 카테고리:",
         lblPrice: "5. 가격 (NT$):",
         saveBtn: "메뉴 저장",
-        manageMenuTitle: "📝 메뉴 관리 (삭제)",
+        manageMenuTitle: "📝 메뉴 관리 (수정 및 삭제)",
         salesChartTitle: "📊 판매 통계",
         orderListTitle: "📝 주문 목록",
         allCategory: "전체 메뉴",
@@ -158,14 +157,11 @@ let currentCategory = 'all';
 let cart = []; 
 let salesChartInstance = null; 
 
-// === 擴充版智慧自動翻譯引擎 (涵蓋各種食材與烹調法) ===
 function smartTranslate(text, lang) {
     if (!text) return "";
     if (lang === 'zh') return text;
 
-    // 涵蓋廣泛的餐飲字典
     const culinaryDict = {
-        // 食材
         "蝦子": { en: "Shrimp", jp: "エビ", kr: "새우" },
         "蝦": { en: "Shrimp", jp: "エビ", kr: "새우" },
         "牛肉": { en: "Beef", jp: "牛肉", kr: "소고기" },
@@ -179,8 +175,9 @@ function smartTranslate(text, lang) {
         "蛋": { en: "Egg", jp: "卵", kr: "계란" },
         "高麗菜": { en: "Cabbage", jp: "キャベツ", kr: "양배추" },
         "空心菜": { en: "Water Spinach", jp: "空心菜", kr: "공심채" },
-        
-        // 烹調方式與風味
+        "下巴": { en: "Fish Collar", jp: "カマ", kr: "생선 턱살" },
+        "鯖魚": { en: "Mackerel", jp: "サバ", kr: "고등어" },
+        "秋刀魚": { en: "Saury", jp: "サンマ", kr: "꽁치" },
         "燙": { en: "Boiled", jp: "湯引き", kr: "데친" },
         "炒": { en: "Stir-fried", jp: "炒め", kr: "볶은" },
         "烤": { en: "Grilled", jp: "焼き", kr: "구운" },
@@ -203,7 +200,6 @@ function smartTranslate(text, lang) {
         }
     }
 
-    // 如果字典裡完全沒有對應到，給出得體的通用後綴
     if (translated === text) {
         if (lang === 'en') return text + " (Special Dish)";
         if (lang === 'jp') return text + " (特製料理)";
@@ -514,6 +510,7 @@ function clearOrders() {
     }
 }
 
+// === 管理現有菜單 (包含編輯與刪除按鈕) ===
 function renderAdminMenu() {
     const container = document.getElementById('admin-menu-list');
     container.innerHTML = '';
@@ -525,10 +522,44 @@ function renderAdminMenu() {
         let html = `
             <div class="admin-menu-item">
                 <span>[${item.category || '未分類'}] ${item.name_zh} (NT$ ${item.price})</span>
-                <button class="delete-btn" onclick="deleteMenuItem('${item.id}')">🗑️ 刪除餐點</button>
+                <div class="admin-menu-actions">
+                    <button class="edit-btn" onclick="editMenuItem('${item.id}')">✏️ 編輯餐點</button>
+                    <button class="delete-btn" onclick="deleteMenuItem('${item.id}')">🗑️ 刪除餐點</button>
+                </div>
             </div>
         `;
         container.innerHTML += html;
+    });
+}
+
+// === 編輯餐點功能 ===
+function editMenuItem(itemId) {
+    const item = menuData.find(i => i.id === itemId);
+    if (!item) return;
+
+    const newName = prompt("請輸入新的餐點名稱 (中文):", item.name_zh);
+    if (newName === null) return; // 按取消
+
+    const newPriceStr = prompt("請輸入新的價格 (NT$):", item.price);
+    if (newPriceStr === null) return;
+    const newPrice = parseInt(newPriceStr);
+    if (isNaN(newPrice) || newPrice < 0) {
+        alert("價格格式錯誤！");
+        return;
+    }
+
+    const newCategory = prompt("請輸入新的分類 (涼拌、生鮮、燒烤、熱炒、火鍋、蒜酥、三杯煲仔、鐵板):", item.category || "熱炒");
+    if (newCategory === null) return;
+
+    // 更新資料
+    item.name_zh = newName;
+    item.price = newPrice;
+    item.category = newCategory;
+
+    db.ref('restaurant_menu').set(menuData).then(() => {
+        alert("✅ 餐點資訊已成功更新！");
+    }).catch(error => {
+        alert("更新失敗：" + error);
     });
 }
 
