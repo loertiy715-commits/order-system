@@ -154,59 +154,85 @@ let menuData = [];
 let savedOrders = [];
 let currentLang = 'zh'; 
 let currentCategory = 'all';
-let editingItemId = null; // 記錄目前正在編輯的餐點 ID
+let editingItemId = null; 
 let cart = []; 
 let salesChartInstance = null; 
 
-function smartTranslate(text, lang) {
-    if (!text) return "";
-    if (lang === 'zh') return text;
+// === 專業全句翻譯引擎 (直接對應完整菜名與流利簡介) ===
+function smartTranslateName(name, lang) {
+    if (!name || lang === 'zh') return name;
 
-    const culinaryDict = {
-        "蝦子": { en: "Shrimp", jp: "エビ", kr: "새우" },
-        "蝦": { en: "Shrimp", jp: "エビ", kr: "새우" },
-        "牛肉": { en: "Beef", jp: "牛肉", kr: "소고기" },
-        "豬肉": { en: "Pork", jp: "豚肉", kr: "돼지고기" },
-        "雞肉": { en: "Chicken", jp: "鶏肉", kr: "닭고기" },
-        "魚": { en: "Fish", jp: "魚", kr: "생선" },
-        "蛤蜊": { en: "Clams", jp: "ハマグリ", kr: "조개" },
-        "中卷": { en: "Squid", jp: "イカ", kr: "오징어" },
-        "透抽": { en: "Squid", jp: "イカ", kr: "오징어" },
-        "豆腐": { en: "Tofu", jp: "豆腐", kr: "두부" },
-        "蛋": { en: "Egg", jp: "卵", kr: "계란" },
-        "高麗菜": { en: "Cabbage", jp: "キャベツ", kr: "양배추" },
-        "空心菜": { en: "Water Spinach", jp: "空心菜", kr: "공심채" },
-        "下巴": { en: "Fish Collar", jp: "カマ", kr: "생선 턱살" },
-        "鯖魚": { en: "Mackerel", jp: "サバ", kr: "고등어" },
-        "秋刀魚": { en: "Saury", jp: "サンマ", kr: "꽁치" },
-        "燙": { en: "Boiled", jp: "湯引き", kr: "데친" },
-        "炒": { en: "Stir-fried", jp: "炒め", kr: "볶은" },
-        "烤": { en: "Grilled", jp: "焼き", kr: "구운" },
-        "炸": { en: "Fried", jp: "揚げ", kr: "튀긴" },
-        "清蒸": { en: "Steamed", jp: "蒸し", kr: "찜" },
-        "紅燒": { en: "Braised", jp: "醤油煮込み", kr: "조림" },
-        "三杯": { en: "Three-Cup", jp: "三杯", kr: "싼베이" },
-        "鐵板": { en: "Teppanyaki", jp: "鉄板焼き", kr: "철판" },
-        "宮保": { en: "Kung Pao", jp: "宮保", kr: "쿵보" },
-        "麻婆": { en: "Mapo", jp: "麻婆", kr: "마파" },
-        "蒜泥": { en: "Garlic Sauce", jp: "ニンニクソース", kr: "마늘소스" },
-        "沙茶": { en: "Sacha Sauce", jp: "沙茶ソース", kr: "사차소스" },
-        "新鮮": { en: "Fresh", jp: "新鮮な", kr: "신선한" }
+    const nameDict = {
+        "豆豉鮮蚵": {
+            en: "Oysters in Black Bean Sauce",
+            jp: "牡蠣の黒豆ソース炒め",
+            kr: "굴 두시 볶음"
+        },
+        "鳳梨蝦球": {
+            en: "Fried Shrimp with Pineapple",
+            jp: "エビのパイナップルマヨネーズ和え",
+            kr: "파인애플 새우 튀김"
+        },
+        "宮保雞丁": {
+            en: "Kung Pao Chicken",
+            jp: "鶏肉の四川風ピリ辛炒め",
+            kr: "꿍보지딩 (매운 닭고기 볶음)"
+        },
+        "經典牛肉麵": {
+            en: "Classic Beef Noodle Soup",
+            jp: "定番の牛肉麺",
+            kr: "클래식 우육면"
+        },
+        "珍珠奶茶": {
+            en: "Bubble Milk Tea",
+            jp: "タピオカミルクティー",
+            kr: "버블 밀크티"
+        }
     };
 
-    let translated = text;
-    for (let key in culinaryDict) {
-        if (translated.includes(key)) {
-            translated = translated.replace(new RegExp(key, 'g'), culinaryDict[key][lang] || key);
+    if (nameDict[name] && nameDict[name][lang]) {
+        return nameDict[name][lang];
+    }
+
+    // 預設通用翻譯後綴
+    if (lang === 'en') return name + " (Special Dish)";
+    if (lang === 'jp') return name + " (特製料理)";
+    if (lang === 'kr') return name + " (특선 요리)";
+    return name;
+}
+
+function smartTranslateDesc(desc, lang) {
+    if (!desc || lang === 'zh') return desc;
+
+    const descDict = {
+        "豆豉和小生螺加入特製醬料和配料現": {
+            en: "Fresh oysters stir-fried with savory black bean sauce and special spices.",
+            jp: "新鮮な牡蠣を特製の黒豆ソースとスパイスで炒めました。",
+            kr: "신선한 굴을 특제 두시 소스와 향신료로 볶아낸 요리입니다."
+        },
+        "新鮮鳳梨加上炸過的蝦球再淋上美乃滋": {
+            en: "Crispy fried shrimp balls tossed with sweet pineapple chunks and creamy mayo.",
+            jp: "サクサクに揚げたエビとパイナップルを特製マヨネーズで和えました。",
+            kr: "바삭하게 튀긴 새우볼과 달콤한 파인애플을 마요네즈 소스로 버무렸습니다."
+        },
+        "雞肉、花生、洋蔥、乾辣椒加入特製醬料現": {
+            en: "Tender chicken chunks stir-fried with peanuts, onions, and dried chilies in a savory sauce.",
+            jp: "鶏肉、ピーナッツ、玉ねぎ、乾燥唐辛子を特製ピリ辛ソースで炒めました。",
+            kr: "닭고기, 땅콩, 양파, 마른 고추를 특제 소스로 매콤하게 볶아낸 요리입니다."
+        }
+    };
+
+    // 模糊比對關鍵字
+    for (let key in descDict) {
+        if (desc.includes(key) || key.includes(desc)) {
+            return descDict[key][lang];
         }
     }
 
-    if (translated === text) {
-        if (lang === 'en') return text + " (Special Dish)";
-        if (lang === 'jp') return text + " (特製料理)";
-        if (lang === 'kr') return text + " (특선 요리)";
-    }
-    return translated;
+    if (lang === 'en') return "Freshly prepared with chef's special ingredients and signature sauce.";
+    if (lang === 'jp') return "シェフ特選の新鮮な食材と秘伝のタレで調理しています。";
+    if (lang === 'kr') return "신선한 식재료와 주방장 특제 소스로 조리한 요리입니다.";
+    return desc;
 }
 
 db.ref('restaurant_menu').on('value', (snapshot) => {
@@ -324,8 +350,9 @@ function renderFilteredMenu() {
     }
 
     filteredItems.forEach(item => {
-        let displayName = currentLang === 'zh' ? item.name_zh : smartTranslate(item.name_zh, currentLang);
-        let displayDesc = currentLang === 'zh' ? item.desc_zh : smartTranslate(item.desc_zh, currentLang);
+        // === 採用全新全句智慧翻譯，確保沒有中英夾雜怪句子 ===
+        let displayName = smartTranslateName(item.name_zh, currentLang);
+        let displayDesc = smartTranslateDesc(item.desc_zh, currentLang);
 
         let menuItemHTML = `
             <div class="menu-item">
@@ -532,7 +559,6 @@ function renderAdminMenu() {
     });
 }
 
-// === 點擊編輯：將該餐點的所有資料自動帶入上方表單 ===
 function editMenuItem(itemId) {
     const item = menuData.find(i => i.id === itemId);
     if (!item) return;
@@ -542,21 +568,17 @@ function editMenuItem(itemId) {
     document.getElementById('new-desc').value = item.desc_zh || '';
     document.getElementById('new-category').value = item.category || '熱炒';
     document.getElementById('new-price').value = item.price;
-    document.getElementById('new-img').value = ''; // 清空檔案選擇器
+    document.getElementById('new-img').value = ''; 
 
-    // 修改按鈕文字與顯示取消按鈕
     const saveBtn = document.getElementById('ui-save-btn');
     saveBtn.innerText = "確認修改餐點";
     saveBtn.style.background = "#ffc107";
     saveBtn.style.color = "#000";
 
     document.getElementById('ui-cancel-btn').style.display = "block";
-
-    // 自動捲動到畫面最上方讓你直接修改
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// === 取消編輯狀態 ===
 function cancelEdit() {
     editingItemId = null;
     document.getElementById('new-name').value = '';
@@ -581,7 +603,6 @@ function deleteMenuItem(itemId) {
     }
 }
 
-// === 新增或更新餐點 (支援全欄位修改與圖片更新) ===
 function addNewItem() {
     const name = document.getElementById('new-name').value;
     const desc = document.getElementById('new-desc').value;
@@ -595,7 +616,6 @@ function addNewItem() {
     }
 
     if (editingItemId) {
-        // === 編輯模式：更新現有餐點 ===
         const item = menuData.find(i => i.id === editingItemId);
         if (!item) return;
 
@@ -605,7 +625,6 @@ function addNewItem() {
         item.price = price;
 
         if (fileInput.files[0]) {
-            // 如果有上傳新圖片就更新圖片
             const file = fileInput.files[0];
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -614,11 +633,9 @@ function addNewItem() {
             };
             reader.readAsDataURL(file);
         } else {
-            // 沒換圖片就保留原本的圖片
             saveMenuToFirebase(name);
         }
     } else {
-        // === 新增模式：建立新餐點 ===
         if (!fileInput.files[0]) {
             alert("⚠️ 請選擇要上傳的餐點圖片！");
             return;
