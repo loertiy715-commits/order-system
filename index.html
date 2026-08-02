@@ -31,7 +31,7 @@
             <button id="ui-cart-btn" onclick="showCart()">🛒 購物車 (<span id="cart-count">0</span>)</button>
         </div>
         
-        <!-- 新增：左右滑動分類列 -->
+        <!-- 左右滑動分類列 -->
         <div class="category-scroll-container" id="category-scroll"></div>
 
         <div id="menu-container"></div>
@@ -58,7 +58,7 @@
         <h2 id="ui-admin-title">管理員後台</h2>
         
         <div class="admin-section">
-            <h3 id="ui-add-menu-title">➕ 新增菜單餐點</h3>
+            <h3 id="ui-add-menu-title">➕ 新增 / 編輯餐點</h3>
             <div class="add-item-form">
                 <label id="ui-lbl-img">1. 餐點圖片 (上傳):</label>
                 <input type="file" id="new-img" accept="image/*">
@@ -84,12 +84,15 @@
                 <label id="ui-lbl-price">5. 價格 (NT$):</label>
                 <input type="number" id="new-price" min="0" placeholder="例如：180">
 
-                <button id="ui-save-btn" onclick="addNewItem()" class="save-btn">儲存新餐點</button>
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button id="ui-save-btn" onclick="addNewItem()" class="save-btn" style="flex: 1; margin-top: 0;">儲存新餐點</button>
+                    <button id="ui-cancel-btn" onclick="cancelEdit()" style="display: none; flex: 1; background: #6c757d; color: white; border: none; padding: 12px; font-size: 18px; border-radius: 5px; cursor: pointer;">取消編輯</button>
+                </div>
             </div>
         </div>
 
         <div class="admin-section">
-            <h3 id="ui-manage-menu-title">📝 管理現有菜單 (刪除餐點)</h3>
+            <h3 id="ui-manage-menu-title">📝 管理現有菜單 (編輯與刪除)</h3>
             <div id="admin-menu-list"></div>
         </div>
 

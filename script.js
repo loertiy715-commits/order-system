@@ -23,7 +23,7 @@ const uiTexts = {
         logoutAdmin: "⬅️ 登出並返回首頁",
         clearOrders: "🗑️ 清空所有歷史訂單",
         adminTitle: "管理員後台",
-        addMenuTitle: "➕ 新增菜單餐點",
+        addMenuTitle: "➕ 新增 / 編輯餐點",
         lblImg: "1. 餐點圖片 (上傳):",
         lblName: "2. 餐點名稱 (中文):",
         lblDesc: "3. 餐點簡介:",
@@ -51,7 +51,7 @@ const uiTexts = {
         logoutAdmin: "⬅️ Logout & Home",
         clearOrders: "🗑️ Clear All History",
         adminTitle: "Admin Dashboard",
-        addMenuTitle: "➕ Add New Dish",
+        addMenuTitle: "➕ Add / Edit Dish",
         lblImg: "1. Dish Image:",
         lblName: "2. Dish Name (CN):",
         lblDesc: "3. Description:",
@@ -79,7 +79,7 @@ const uiTexts = {
         logoutAdmin: "⬅️ ログアウト",
         clearOrders: "🗑️ 履歴をすべてクリア",
         adminTitle: "管理者画面",
-        addMenuTitle: "➕ 新規メニュー追加",
+        addMenuTitle: "➕ 新規追加 / 編集",
         lblImg: "1. 料理画像:",
         lblName: "2. 料理名 (中国語):",
         lblDesc: "3. 説明:",
@@ -107,7 +107,7 @@ const uiTexts = {
         logoutAdmin: "⬅️ 로그아웃",
         clearOrders: "🗑️ 전체 내역 삭제",
         adminTitle: "관리자 대시보드",
-        addMenuTitle: "➕ 메뉴 추가",
+        addMenuTitle: "➕ 메뉴 추가 / 수정",
         lblImg: "1. 음식 이미지:",
         lblName: "2. 음식 이름 (중국어):",
         lblDesc: "3. 설명:",
@@ -154,6 +154,7 @@ let menuData = [];
 let savedOrders = [];
 let currentLang = 'zh'; 
 let currentCategory = 'all';
+let editingItemId = null; // 記錄目前正在編輯的餐點 ID
 let cart = []; 
 let salesChartInstance = null; 
 
@@ -260,7 +261,7 @@ function updateUITexts() {
     document.getElementById('ui-lbl-desc').innerText = t.lblDesc;
     document.getElementById('ui-lbl-category').innerText = t.lblCategory;
     document.getElementById('ui-lbl-price').innerText = t.lblPrice;
-    document.getElementById('ui-save-btn').innerText = t.saveBtn;
+    document.getElementById('ui-save-btn').innerText = editingItemId ? "確認修改餐點" : t.saveBtn;
     document.getElementById('ui-manage-menu-title').innerText = t.manageMenuTitle;
     document.getElementById('ui-sales-chart-title').innerText = t.salesChartTitle;
     document.getElementById('ui-order-list-title').innerText = t.orderListTitle;
@@ -510,7 +511,6 @@ function clearOrders() {
     }
 }
 
-// === 管理現有菜單 (包含編輯與刪除按鈕) ===
 function renderAdminMenu() {
     const container = document.getElementById('admin-menu-list');
     container.innerHTML = '';
@@ -532,35 +532,44 @@ function renderAdminMenu() {
     });
 }
 
-// === 編輯餐點功能 ===
+// === 點擊編輯：將該餐點的所有資料自動帶入上方表單 ===
 function editMenuItem(itemId) {
     const item = menuData.find(i => i.id === itemId);
     if (!item) return;
 
-    const newName = prompt("請輸入新的餐點名稱 (中文):", item.name_zh);
-    if (newName === null) return; // 按取消
+    editingItemId = itemId;
+    document.getElementById('new-name').value = item.name_zh;
+    document.getElementById('new-desc').value = item.desc_zh || '';
+    document.getElementById('new-category').value = item.category || '熱炒';
+    document.getElementById('new-price').value = item.price;
+    document.getElementById('new-img').value = ''; // 清空檔案選擇器
 
-    const newPriceStr = prompt("請輸入新的價格 (NT$):", item.price);
-    if (newPriceStr === null) return;
-    const newPrice = parseInt(newPriceStr);
-    if (isNaN(newPrice) || newPrice < 0) {
-        alert("價格格式錯誤！");
-        return;
-    }
+    // 修改按鈕文字與顯示取消按鈕
+    const saveBtn = document.getElementById('ui-save-btn');
+    saveBtn.innerText = "確認修改餐點";
+    saveBtn.style.background = "#ffc107";
+    saveBtn.style.color = "#000";
 
-    const newCategory = prompt("請輸入新的分類 (涼拌、生鮮、燒烤、熱炒、火鍋、蒜酥、三杯煲仔、鐵板):", item.category || "熱炒");
-    if (newCategory === null) return;
+    document.getElementById('ui-cancel-btn').style.display = "block";
 
-    // 更新資料
-    item.name_zh = newName;
-    item.price = newPrice;
-    item.category = newCategory;
+    // 自動捲動到畫面最上方讓你直接修改
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
-    db.ref('restaurant_menu').set(menuData).then(() => {
-        alert("✅ 餐點資訊已成功更新！");
-    }).catch(error => {
-        alert("更新失敗：" + error);
-    });
+// === 取消編輯狀態 ===
+function cancelEdit() {
+    editingItemId = null;
+    document.getElementById('new-name').value = '';
+    document.getElementById('new-desc').value = '';
+    document.getElementById('new-price').value = '';
+    document.getElementById('new-img').value = '';
+    
+    const saveBtn = document.getElementById('ui-save-btn');
+    saveBtn.innerText = uiTexts[currentLang].saveBtn;
+    saveBtn.style.background = "#007BFF";
+    saveBtn.style.color = "#fff";
+
+    document.getElementById('ui-cancel-btn').style.display = "none";
 }
 
 function deleteMenuItem(itemId) {
@@ -572,6 +581,7 @@ function deleteMenuItem(itemId) {
     }
 }
 
+// === 新增或更新餐點 (支援全欄位修改與圖片更新) ===
 function addNewItem() {
     const name = document.getElementById('new-name').value;
     const desc = document.getElementById('new-desc').value;
@@ -579,35 +589,66 @@ function addNewItem() {
     const price = parseInt(document.getElementById('new-price').value);
     const fileInput = document.getElementById('new-img');
 
-    if (!name || !desc || isNaN(price) || !fileInput.files[0]) {
-        alert("⚠️ 請填寫完整資訊並選擇圖片！");
+    if (!name || !desc || isNaN(price)) {
+        alert("⚠️ 請填寫完整資訊 (名稱、簡介、價格)！");
         return;
     }
 
-    const file = fileInput.files[0];
-    const reader = new FileReader();
+    if (editingItemId) {
+        // === 編輯模式：更新現有餐點 ===
+        const item = menuData.find(i => i.id === editingItemId);
+        if (!item) return;
 
-    reader.onload = function(e) {
-        const newId = "A_" + new Date().getTime();
-        
-        const newItem = {
-            id: newId,
-            price: price,
-            category: category,
-            image_url: e.target.result,
-            name_zh: name, 
-            desc_zh: desc
+        item.name_zh = name;
+        item.desc_zh = desc;
+        item.category = category;
+        item.price = price;
+
+        if (fileInput.files[0]) {
+            // 如果有上傳新圖片就更新圖片
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                item.image_url = e.target.result;
+                saveMenuToFirebase(name);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            // 沒換圖片就保留原本的圖片
+            saveMenuToFirebase(name);
+        }
+    } else {
+        // === 新增模式：建立新餐點 ===
+        if (!fileInput.files[0]) {
+            alert("⚠️ 請選擇要上傳的餐點圖片！");
+            return;
+        }
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            const newId = "A_" + new Date().getTime();
+            const newItem = {
+                id: newId,
+                price: price,
+                category: category,
+                image_url: e.target.result,
+                name_zh: name, 
+                desc_zh: desc
+            };
+
+            menuData.push(newItem);
+            saveMenuToFirebase(name);
         };
+        reader.readAsDataURL(file);
+    }
+}
 
-        const updatedMenu = [...menuData, newItem];
-        db.ref('restaurant_menu').set(updatedMenu).then(() => {
-            alert(`✅ 成功新增餐點：${name} (${category})！`);
-            document.getElementById('new-name').value = '';
-            document.getElementById('new-desc').value = '';
-            document.getElementById('new-price').value = '';
-            fileInput.value = '';
-        });
-    };
-
-    reader.readAsDataURL(file);
+function saveMenuToFirebase(name) {
+    db.ref('restaurant_menu').set(menuData).then(() => {
+        alert(editingItemId ? `✅ 成功更新餐點：${name}！` : `✅ 成功新增餐點：${name}！`);
+        cancelEdit();
+    }).catch(error => {
+        alert("儲存失敗：" + error);
+    });
 }
