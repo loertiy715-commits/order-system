@@ -132,6 +132,35 @@ let editingItemId = null;
 let cart = []; 
 let salesChartInstance = null; 
 
+// === 智慧自動翻譯引擎 (當資料庫沒填寫時的自動補丁) ===
+function smartTranslate(text, lang) {
+    if (!text || lang === 'zh') return text;
+    const dict = {
+        "燙蝦子": { en: "Boiled Shrimp", jp: "エビの湯引き", kr: "데친 새우" },
+        "魚下巴": { en: "Grilled Fish Collar", jp: "魚のカマ焼き", kr: "생선 턱살 구이" },
+        "烤鯖魚": { en: "Grilled Mackerel", jp: "サバの塩焼き", kr: "고등어 구이" },
+        "烤秋刀魚": { en: "Grilled Saury", jp: "サンマの塩焼き", kr: "꽁치 구이" },
+        "豆干肉絲": { en: "Stir-fried Pork with Dried Tofu", jp: "豚肉と干し豆腐の炒め物", kr: "말린 두부와 돼지고기 볶음" },
+        "金沙豆腐": { en: "Tofu with Salted Egg Yolk", jp: "豆腐の塩漬け卵黄炒め", kr: "소금 蛋 두부 볶음" },
+        "蝦子": { en: "Shrimp", jp: "エビ", kr: "새우" },
+        "牛肉": { en: "Beef", jp: "牛肉", kr: "소고기" },
+        "豬肉": { en: "Pork", jp: "豚肉", kr: "돼지고기" },
+        "雞肉": { en: "Chicken", jp: "鶏肉", kr: "닭고기" },
+        "魚": { en: "Fish", jp: "魚", kr: "생선" },
+        "新鮮現燙大蝦": { en: "Freshly boiled large shrimp", jp: "新鮮でジューシーなエビの湯引き", kr: "신선하게 데친 대하" }
+    };
+
+    if (dict[text] && dict[text][lang]) {
+        return dict[text][lang];
+    }
+
+    // 萬用後綴
+    if (lang === 'en') return text + " (Special)";
+    if (lang === 'jp') return text + " (特製)";
+    if (lang === 'kr') return text + " (특선)";
+    return text;
+}
+
 db.ref('restaurant_menu').on('value', (snapshot) => {
     let data = snapshot.val();
     if (data) {
@@ -242,11 +271,14 @@ function renderFilteredMenu() {
     }
 
     filteredItems.forEach(item => {
-        let primaryName = (currentLang !== 'zh' && item[`name_${currentLang}`]) ? item[`name_${currentLang}`] : item.name_zh;
-        let secondaryName = (currentLang !== 'zh' && item[`name_${currentLang}`]) ? `(${item.name_zh})` : '';
-        
-        let primaryDesc = (currentLang !== 'zh' && item[`desc_${currentLang}`]) ? item[`desc_${currentLang}`] : item.desc_zh;
-        let secondaryDesc = (currentLang !== 'zh' && item[`desc_${currentLang}`]) ? `(${item.desc_zh})` : '';
+        // === 智慧雙重檢查：有填寫就用手動填寫的，沒填寫就自動調用 smartTranslate ===
+        let rawName = (currentLang !== 'zh' && item[`name_${currentLang}`]) ? item[`name_${currentLang}`] : null;
+        let primaryName = rawName ? rawName : (currentLang === 'zh' ? item.name_zh : smartTranslate(item.name_zh, currentLang));
+        let secondaryName = (currentLang !== 'zh') ? `(${item.name_zh})` : '';
+
+        let rawDesc = (currentLang !== 'zh' && item[`desc_${currentLang}`]) ? item[`desc_${currentLang}`] : null;
+        let primaryDesc = rawDesc ? rawDesc : (currentLang === 'zh' ? item.desc_zh : smartTranslate(item.desc_zh, currentLang));
+        let secondaryDesc = (currentLang !== 'zh') ? `(${item.desc_zh})` : '';
 
         let menuItemHTML = `
             <div class="menu-item">
