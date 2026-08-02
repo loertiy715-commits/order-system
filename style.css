@@ -119,11 +119,37 @@ body {
     flex: 1;
 }
 
-.price {
-    color: #e63946;
+.dish-title-container {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.dish-main-name {
     font-size: 24px;
     font-weight: bold;
-    margin: 10px 0;
+    color: #333;
+    margin: 0;
+}
+
+.dish-sub-name {
+    font-size: 16px;
+    color: #666;
+    margin: 0;
+}
+
+.dish-desc {
+    margin: 8px 0;
+    color: #555;
+    font-size: 15px;
+}
+
+.price {
+    color: #e63946;
+    font-size: 22px;
+    font-weight: bold;
+    margin: 5px 0;
 }
 
 .add-action {
@@ -186,38 +212,37 @@ body {
     font-size: 20px;
 }
 
-/* 後台表單卡片區塊化 */
-.form-grid {
+/* 後台左右對照表單排版 */
+.admin-form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
-    max-width: 900px;
+    max-width: 1000px;
 }
 
 .form-full {
     grid-column: span 2;
 }
 
-.lang-card {
+.lang-column {
     background: #f8f9fa;
     border: 1px solid #e9ecef;
-    padding: 15px;
+    padding: 18px;
     border-radius: 8px;
 }
 
-.lang-card h4 {
+.lang-column h4 {
     margin-top: 0;
-    margin-bottom: 12px;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    margin-bottom: 15px;
+    font-size: 17px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 8px;
 }
 
 .add-item-form label {
     font-weight: bold;
     font-size: 14px;
-    color: #555;
+    color: #444;
     margin-bottom: 5px;
     display: block;
 }
@@ -304,7 +329,7 @@ ul {
 }
 
 @media (max-width: 768px) {
-    .form-grid {
+    .admin-form-grid {
         grid-template-columns: 1fr;
     }
     .form-full {

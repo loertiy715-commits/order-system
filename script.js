@@ -242,15 +242,21 @@ function renderFilteredMenu() {
     }
 
     filteredItems.forEach(item => {
-        let displayName = item[`name_${currentLang}`] || item.name_zh;
-        let displayDesc = item[`desc_${currentLang}`] || item.desc_zh;
+        let primaryName = (currentLang !== 'zh' && item[`name_${currentLang}`]) ? item[`name_${currentLang}`] : item.name_zh;
+        let secondaryName = (currentLang !== 'zh' && item[`name_${currentLang}`]) ? `(${item.name_zh})` : '';
+        
+        let primaryDesc = (currentLang !== 'zh' && item[`desc_${currentLang}`]) ? item[`desc_${currentLang}`] : item.desc_zh;
+        let secondaryDesc = (currentLang !== 'zh' && item[`desc_${currentLang}`]) ? `(${item.desc_zh})` : '';
 
         let menuItemHTML = `
             <div class="menu-item">
-                <img src="${item.image_url}" alt="${displayName}">
+                <img src="${item.image_url}" alt="${primaryName}">
                 <div class="menu-info">
-                    <h2>${displayName}</h2>
-                    <p>${displayDesc}</p>
+                    <div class="dish-title-container">
+                        <h2 class="dish-main-name">${primaryName}</h2>
+                        ${secondaryName ? `<span class="dish-sub-name">${secondaryName}</span>` : ''}
+                    </div>
+                    <p class="dish-desc">${primaryDesc} ${secondaryDesc ? `<br><small style="color:#888;">${secondaryDesc}</small>` : ''}</p>
                     <div class="price">NT$ ${item.price}</div>
                     
                     <div class="add-action">

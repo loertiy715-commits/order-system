@@ -60,7 +60,7 @@
         <div class="admin-section">
             <h3 id="ui-add-menu-title">➕ 新增 / 編輯餐點</h3>
             <div class="add-item-form">
-                <div class="form-grid">
+                <div class="admin-form-grid">
                     <!-- 基本設定 -->
                     <div class="form-full">
                         <label>1. 餐點圖片 (上傳):</label>
@@ -87,39 +87,39 @@
                         </div>
                     </div>
 
-                    <!-- 中文卡片 -->
-                    <div class="lang-card">
-                        <h4 style="color: #2b6cb0;">🇹🇼 中文設定 (預設)</h4>
-                        <label>名稱:</label>
+                    <!-- 左欄：中文設定 (基準) -->
+                    <div class="lang-column" style="border-left: 4px solid #2b6cb0;">
+                        <h4 style="color: #2b6cb0;">🇹🇼 中文設定 (基準)</h4>
+                        <label>餐點名稱 (中文):</label>
                         <input type="text" id="new-name-zh" placeholder="例如：豆干肉絲">
-                        <label>簡介:</label>
+                        <label>餐點簡介 (中文):</label>
                         <input type="text" id="new-desc-zh" placeholder="例如：特製醬料現炒">
                     </div>
 
-                    <!-- 英文卡片 -->
-                    <div class="lang-card">
+                    <!-- 右欄：英文設定 -->
+                    <div class="lang-column" style="border-left: 4px solid #2f855a;">
                         <h4 style="color: #2f855a;">🇺🇸 英文設定</h4>
-                        <label>Name:</label>
+                        <label>Dish Name (English):</label>
                         <input type="text" id="new-name-en" placeholder="Stir-fried Pork...">
-                        <label>Description:</label>
+                        <label>Description (English):</label>
                         <input type="text" id="new-desc-en" placeholder="Tender pork...">
                     </div>
 
-                    <!-- 日文卡片 -->
-                    <div class="lang-card">
+                    <!-- 左欄：日文設定 -->
+                    <div class="lang-column" style="border-left: 4px solid #c53030;">
                         <h4 style="color: #c53030;">🇯🇵 日文設定</h4>
-                        <label>料理名:</label>
+                        <label>料理名 (日本語):</label>
                         <input type="text" id="new-name-jp" placeholder="豚肉と干し豆腐...">
-                        <label>説明:</label>
+                        <label>説明 (日本語):</label>
                         <input type="text" id="new-desc-jp" placeholder="特製ソース...">
                     </div>
 
-                    <!-- 韓文卡片 -->
-                    <div class="lang-card">
+                    <!-- 右欄：韓文設定 -->
+                    <div class="lang-column" style="border-left: 4px solid #d69e2e;">
                         <h4 style="color: #d69e2e;">🇰🇷 韓文設定</h4>
-                        <label>음식 이름:</label>
+                        <label>음식 이름 (한국어):</label>
                         <input type="text" id="new-name-kr" placeholder="말린 두부와...">
-                        <label>설명:</label>
+                        <label>설명 (한국어):</label>
                         <input type="text" id="new-desc-kr" placeholder="특제 소스로...">
                     </div>
                 </div>
