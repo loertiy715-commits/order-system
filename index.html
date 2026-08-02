@@ -14,7 +14,7 @@
 <body>
     <!-- 畫面一：選擇語系 -->
     <div id="lang-screen" class="screen">
-        <h1 id="ui-select-lang">請選擇語言 / Select Language</h1>
+        <h1 id="ui-select-lang" style="text-align: center; margin-top: 80px;">請選擇語言 / Select Language</h1>
         <div class="lang-buttons">
             <button onclick="chooseLang('zh')">中文</button>
             <button onclick="chooseLang('en')">English</button>
@@ -27,7 +27,7 @@
     <!-- 畫面二：點餐畫面 -->
     <div id="menu-screen" class="screen" style="display: none;">
         <div class="header">
-            <button id="ui-back-lang" onclick="backToLang()">⬅️ 返回上一頁 (更改語言)</button>
+            <button id="ui-back-lang" onclick="backToLang()">⬅️ 返回語言選擇</button>
             <button id="ui-cart-btn" onclick="showCart()">🛒 購物車 (<span id="cart-count">0</span>)</button>
         </div>
         
@@ -40,12 +40,12 @@
     <!-- 畫面三：購物車畫面 -->
     <div id="cart-screen" class="screen" style="display: none;">
         <div class="header">
-            <button id="ui-back-menu" onclick="backToMenu()">⬅️ 返回上一頁 (繼續點餐)</button>
+            <button id="ui-back-menu" onclick="backToMenu()">⬅️ 繼續點餐</button>
         </div>
         <h2 id="ui-cart-title">購物車 (訂單明細)</h2>
         <ul id="cart-list"></ul>
         <div class="cart-actions">
-            <button id="ui-checkout-btn" onclick="checkout()" style="background: red; color: white; font-size: 20px; padding: 10px 20px;">送出訂單</button>
+            <button id="ui-checkout-btn" onclick="checkout()" style="background: #e63946; color: white; font-size: 20px; padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer;">送出訂單</button>
         </div>
     </div>
 
@@ -53,40 +53,81 @@
     <div id="admin-screen" class="screen" style="display: none;">
         <div class="header">
             <button id="ui-logout-admin" onclick="logoutAdmin()">⬅️ 登出並返回首頁</button>
-            <button id="ui-clear-orders" onclick="clearOrders()" style="background: red; color: white;">🗑️ 清空所有歷史訂單</button>
+            <button id="ui-clear-orders" onclick="clearOrders()" style="background: #e53e3e; color: white;">🗑️ 清空所有歷史訂單</button>
         </div>
         <h2 id="ui-admin-title">管理員後台</h2>
         
         <div class="admin-section">
             <h3 id="ui-add-menu-title">➕ 新增 / 編輯餐點</h3>
             <div class="add-item-form">
-                <label id="ui-lbl-img">1. 餐點圖片 (上傳):</label>
-                <input type="file" id="new-img" accept="image/*">
-                
-                <label id="ui-lbl-name">2. 餐點名稱 (中文):</label>
-                <input type="text" id="new-name" placeholder="例如：燙蝦子">
+                <div class="form-grid">
+                    <!-- 基本設定 -->
+                    <div class="form-full">
+                        <label>1. 餐點圖片 (上傳):</label>
+                        <input type="file" id="new-img" accept="image/*">
+                    </div>
 
-                <label id="ui-lbl-desc">3. 餐點簡介:</label>
-                <input type="text" id="new-desc" placeholder="例如：新鮮現燙大蝦">
+                    <div class="form-full" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div>
+                            <label>2. 餐點分類:</label>
+                            <select id="new-category">
+                                <option value="涼拌">涼拌</option>
+                                <option value="生鮮">生鮮</option>
+                                <option value="燒烤">燒烤</option>
+                                <option value="熱炒">熱炒</option>
+                                <option value="火鍋">火鍋</option>
+                                <option value="蒜酥">蒜酥</option>
+                                <option value="三杯煲仔">三杯煲仔</option>
+                                <option value="鐵板">鐵板</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>3. 價格 (NT$):</label>
+                            <input type="number" id="new-price" min="0" placeholder="例如：150">
+                        </div>
+                    </div>
 
-                <label id="ui-lbl-category">4. 餐點分類:</label>
-                <select id="new-category">
-                    <option value="涼拌">涼拌</option>
-                    <option value="生鮮">生鮮</option>
-                    <option value="燒烤">燒烤</option>
-                    <option value="熱炒">熱炒</option>
-                    <option value="火鍋">火鍋</option>
-                    <option value="蒜酥">蒜酥</option>
-                    <option value="三杯煲仔">三杯煲仔</option>
-                    <option value="鐵板">鐵板</option>
-                </select>
+                    <!-- 中文卡片 -->
+                    <div class="lang-card">
+                        <h4 style="color: #2b6cb0;">🇹🇼 中文設定 (預設)</h4>
+                        <label>名稱:</label>
+                        <input type="text" id="new-name-zh" placeholder="例如：豆干肉絲">
+                        <label>簡介:</label>
+                        <input type="text" id="new-desc-zh" placeholder="例如：特製醬料現炒">
+                    </div>
 
-                <label id="ui-lbl-price">5. 價格 (NT$):</label>
-                <input type="number" id="new-price" min="0" placeholder="例如：180">
+                    <!-- 英文卡片 -->
+                    <div class="lang-card">
+                        <h4 style="color: #2f855a;">🇺🇸 英文設定</h4>
+                        <label>Name:</label>
+                        <input type="text" id="new-name-en" placeholder="Stir-fried Pork...">
+                        <label>Description:</label>
+                        <input type="text" id="new-desc-en" placeholder="Tender pork...">
+                    </div>
 
-                <div style="display: flex; gap: 10px; margin-top: 15px;">
-                    <button id="ui-save-btn" onclick="addNewItem()" class="save-btn" style="flex: 1; margin-top: 0;">儲存新餐點</button>
-                    <button id="ui-cancel-btn" onclick="cancelEdit()" style="display: none; flex: 1; background: #6c757d; color: white; border: none; padding: 12px; font-size: 18px; border-radius: 5px; cursor: pointer;">取消編輯</button>
+                    <!-- 日文卡片 -->
+                    <div class="lang-card">
+                        <h4 style="color: #c53030;">🇯🇵 日文設定</h4>
+                        <label>料理名:</label>
+                        <input type="text" id="new-name-jp" placeholder="豚肉と干し豆腐...">
+                        <label>説明:</label>
+                        <input type="text" id="new-desc-jp" placeholder="特製ソース...">
+                    </div>
+
+                    <!-- 韓文卡片 -->
+                    <div class="lang-card">
+                        <h4 style="color: #d69e2e;">🇰🇷 韓文設定</h4>
+                        <label>음식 이름:</label>
+                        <input type="text" id="new-name-kr" placeholder="말린 두부와...">
+                        <label>설명:</label>
+                        <input type="text" id="new-desc-kr" placeholder="특제 소스로...">
+                    </div>
+                </div>
+
+                <!-- 儲存與取消按鈕 -->
+                <div style="display: flex; gap: 15px; margin-top: 25px; max-width: 500px;">
+                    <button id="ui-save-btn" onclick="addNewItem()" class="save-btn" style="flex: 1;">儲存新餐點</button>
+                    <button id="ui-cancel-btn" onclick="cancelEdit()" style="display: none; flex: 1; background: #718096; color: white; border: none; padding: 12px; font-size: 18px; border-radius: 8px; cursor: pointer; font-weight: bold;">取消編輯</button>
                 </div>
             </div>
         </div>

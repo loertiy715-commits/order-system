@@ -15,21 +15,15 @@ const uiTexts = {
     zh: {
         selectLang: "請選擇語言 / Select Language",
         adminLogin: "⚙️ 管理員登入",
-        backLang: "⬅️ 返回上一頁 (更改語言)",
+        backLang: "⬅️ 返回語言選擇",
         cartBtn: "🛒 購物車",
-        backMenu: "⬅️ 返回上一頁 (繼續點餐)",
+        backMenu: "⬅️ 繼續點餐",
         cartTitle: "購物車 (訂單明細)",
         checkoutBtn: "送出訂單",
         logoutAdmin: "⬅️ 登出並返回首頁",
         clearOrders: "🗑️ 清空所有歷史訂單",
         adminTitle: "管理員後台",
         addMenuTitle: "➕ 新增 / 編輯餐點",
-        lblImg: "1. 餐點圖片 (上傳):",
-        lblName: "2. 餐點名稱 (中文):",
-        lblDesc: "3. 餐點簡介:",
-        lblCategory: "4. 餐點分類:",
-        lblPrice: "5. 價格 (NT$):",
-        saveBtn: "儲存新餐點",
         manageMenuTitle: "📝 管理現有菜單 (編輯與刪除)",
         salesChartTitle: "📊 銷售數量統計",
         orderListTitle: "📝 詳細訂單列表",
@@ -43,21 +37,15 @@ const uiTexts = {
     en: {
         selectLang: "Select Language",
         adminLogin: "⚙️ Admin Login",
-        backLang: "⬅️ Back (Change Language)",
+        backLang: "⬅️ Back",
         cartBtn: "🛒 Cart",
-        backMenu: "⬅️ Back (Continue)",
+        backMenu: "⬅️ Continue",
         cartTitle: "Cart (Order Details)",
         checkoutBtn: "Submit Order",
         logoutAdmin: "⬅️ Logout & Home",
         clearOrders: "🗑️ Clear All History",
         adminTitle: "Admin Dashboard",
         addMenuTitle: "➕ Add / Edit Dish",
-        lblImg: "1. Dish Image:",
-        lblName: "2. Dish Name (CN):",
-        lblDesc: "3. Description:",
-        lblCategory: "4. Category:",
-        lblPrice: "5. Price (NT$):",
-        saveBtn: "Save Dish",
         manageMenuTitle: "📝 Manage Menu (Edit & Delete)",
         salesChartTitle: "📊 Sales Statistics",
         orderListTitle: "📝 Order List",
@@ -71,21 +59,15 @@ const uiTexts = {
     jp: {
         selectLang: "言語を選択してください / Select Language",
         adminLogin: "⚙️ 管理者ログイン",
-        backLang: "⬅️ 戻る (言語変更)",
+        backLang: "⬅️ 戻る",
         cartBtn: "🛒 カート",
-        backMenu: "⬅️ 戻る (注文続行)",
+        backMenu: "⬅️ 注文続行",
         cartTitle: "カート (注文詳細)",
         checkoutBtn: "注文を送信",
         logoutAdmin: "⬅️ ログアウト",
         clearOrders: "🗑️ 履歴をすべてクリア",
         adminTitle: "管理者画面",
         addMenuTitle: "➕ 新規追加 / 編集",
-        lblImg: "1. 料理画像:",
-        lblName: "2. 料理名 (中国語):",
-        lblDesc: "3. 説明:",
-        lblCategory: "4. カテゴリ:",
-        lblPrice: "5. 価格 (NT$):",
-        saveBtn: "メニューを保存",
         manageMenuTitle: "📝 メニュー管理 (編集・削除)",
         salesChartTitle: "📊 売上統計",
         orderListTitle: "📝 注文リスト",
@@ -99,21 +81,15 @@ const uiTexts = {
     kr: {
         selectLang: "언어 선택 / Select Language",
         adminLogin: "⚙️ 관리자 로그인",
-        backLang: "⬅️ 뒤로 (언어 변경)",
+        backLang: "⬅️ 뒤로",
         cartBtn: "🛒 장바구니",
-        backMenu: "⬅️ 뒤로 (계속 주문)",
+        backMenu: "⬅️ 계속 주문",
         cartTitle: "장바구니 (주문 상세)",
         checkoutBtn: "주문하기",
         logoutAdmin: "⬅️ 로그아웃",
         clearOrders: "🗑️ 전체 내역 삭제",
         adminTitle: "관리자 대시보드",
         addMenuTitle: "➕ 메뉴 추가 / 수정",
-        lblImg: "1. 음식 이미지:",
-        lblName: "2. 음식 이름 (중국어):",
-        lblDesc: "3. 설명:",
-        lblCategory: "4. 카테고리:",
-        lblPrice: "5. 가격 (NT$):",
-        saveBtn: "메뉴 저장",
         manageMenuTitle: "📝 메뉴 관리 (수정 및 삭제)",
         salesChartTitle: "📊 판매 통계",
         orderListTitle: "📝 주문 목록",
@@ -141,12 +117,10 @@ const defaultMenu = [
     {
         id: "A001", price: 180, category: "熱炒",
         image_url: "https://images.unsplash.com/photo-1585032226651-759b368d7246?w=400", 
-        name_zh: "經典牛肉麵", desc_zh: "慢熬牛骨湯頭搭配手工麵條"
-    },
-    {
-        id: "A002", price: 60, category: "涼拌",
-        image_url: "https://images.unsplash.com/photo-1563227812-0ea4c22e6cc8?w=400", 
-        name_zh: "珍珠奶茶", desc_zh: "台灣特選紅茶與Q彈珍珠"
+        name_zh: "經典牛肉麵", desc_zh: "慢熬牛骨湯頭搭配手工麵條",
+        name_en: "Classic Beef Noodle Soup", desc_en: "Slow-cooked beef bone broth with hand-pulled noodles",
+        name_jp: "定番の牛肉麺", desc_jp: "じっくり煮込んだ牛骨スープと手作り麺",
+        name_kr: "클래식 우육면", desc_kr: "천천히 끓인 소사골 육수와 수제 면"
     }
 ];
 
@@ -157,83 +131,6 @@ let currentCategory = 'all';
 let editingItemId = null; 
 let cart = []; 
 let salesChartInstance = null; 
-
-// === 專業全句翻譯引擎 (直接對應完整菜名與流利簡介) ===
-function smartTranslateName(name, lang) {
-    if (!name || lang === 'zh') return name;
-
-    const nameDict = {
-        "豆豉鮮蚵": {
-            en: "Oysters in Black Bean Sauce",
-            jp: "牡蠣の黒豆ソース炒め",
-            kr: "굴 두시 볶음"
-        },
-        "鳳梨蝦球": {
-            en: "Fried Shrimp with Pineapple",
-            jp: "エビのパイナップルマヨネーズ和え",
-            kr: "파인애플 새우 튀김"
-        },
-        "宮保雞丁": {
-            en: "Kung Pao Chicken",
-            jp: "鶏肉の四川風ピリ辛炒め",
-            kr: "꿍보지딩 (매운 닭고기 볶음)"
-        },
-        "經典牛肉麵": {
-            en: "Classic Beef Noodle Soup",
-            jp: "定番の牛肉麺",
-            kr: "클래식 우육면"
-        },
-        "珍珠奶茶": {
-            en: "Bubble Milk Tea",
-            jp: "タピオカミルクティー",
-            kr: "버블 밀크티"
-        }
-    };
-
-    if (nameDict[name] && nameDict[name][lang]) {
-        return nameDict[name][lang];
-    }
-
-    // 預設通用翻譯後綴
-    if (lang === 'en') return name + " (Special Dish)";
-    if (lang === 'jp') return name + " (特製料理)";
-    if (lang === 'kr') return name + " (특선 요리)";
-    return name;
-}
-
-function smartTranslateDesc(desc, lang) {
-    if (!desc || lang === 'zh') return desc;
-
-    const descDict = {
-        "豆豉和小生螺加入特製醬料和配料現": {
-            en: "Fresh oysters stir-fried with savory black bean sauce and special spices.",
-            jp: "新鮮な牡蠣を特製の黒豆ソースとスパイスで炒めました。",
-            kr: "신선한 굴을 특제 두시 소스와 향신료로 볶아낸 요리입니다."
-        },
-        "新鮮鳳梨加上炸過的蝦球再淋上美乃滋": {
-            en: "Crispy fried shrimp balls tossed with sweet pineapple chunks and creamy mayo.",
-            jp: "サクサクに揚げたエビとパイナップルを特製マヨネーズで和えました。",
-            kr: "바삭하게 튀긴 새우볼과 달콤한 파인애플을 마요네즈 소스로 버무렸습니다."
-        },
-        "雞肉、花生、洋蔥、乾辣椒加入特製醬料現": {
-            en: "Tender chicken chunks stir-fried with peanuts, onions, and dried chilies in a savory sauce.",
-            jp: "鶏肉、ピーナッツ、玉ねぎ、乾燥唐辛子を特製ピリ辛ソースで炒めました。",
-            kr: "닭고기, 땅콩, 양파, 마른 고추를 특제 소스로 매콤하게 볶아낸 요리입니다."
-        }
-    };
-
-    // 模糊比對關鍵字
-    for (let key in descDict) {
-        if (desc.includes(key) || key.includes(desc)) {
-            return descDict[key][lang];
-        }
-    }
-
-    if (lang === 'en') return "Freshly prepared with chef's special ingredients and signature sauce.";
-    if (lang === 'jp') return "シェフ特選の新鮮な食材と秘伝のタレで調理しています。";
-    if (lang === 'kr') return "신선한 식재료와 주방장 특제 소스로 조리한 요리입니다.";
-    return desc;
-}
 
 db.ref('restaurant_menu').on('value', (snapshot) => {
     let data = snapshot.val();
@@ -282,12 +179,7 @@ function updateUITexts() {
     document.getElementById('ui-clear-orders').innerText = t.clearOrders;
     document.getElementById('ui-admin-title').innerText = t.adminTitle;
     document.getElementById('ui-add-menu-title').innerText = t.addMenuTitle;
-    document.getElementById('ui-lbl-img').innerText = t.lblImg;
-    document.getElementById('ui-lbl-name').innerText = t.lblName;
-    document.getElementById('ui-lbl-desc').innerText = t.lblDesc;
-    document.getElementById('ui-lbl-category').innerText = t.lblCategory;
-    document.getElementById('ui-lbl-price').innerText = t.lblPrice;
-    document.getElementById('ui-save-btn').innerText = editingItemId ? "確認修改餐點" : t.saveBtn;
+    document.getElementById('ui-save-btn').innerText = editingItemId ? "確認修改餐點" : "儲存新餐點";
     document.getElementById('ui-manage-menu-title').innerText = t.manageMenuTitle;
     document.getElementById('ui-sales-chart-title').innerText = t.salesChartTitle;
     document.getElementById('ui-order-list-title').innerText = t.orderListTitle;
@@ -350,9 +242,8 @@ function renderFilteredMenu() {
     }
 
     filteredItems.forEach(item => {
-        // === 採用全新全句智慧翻譯，確保沒有中英夾雜怪句子 ===
-        let displayName = smartTranslateName(item.name_zh, currentLang);
-        let displayDesc = smartTranslateDesc(item.desc_zh, currentLang);
+        let displayName = item[`name_${currentLang}`] || item.name_zh;
+        let displayDesc = item[`desc_${currentLang}`] || item.desc_zh;
 
         let menuItemHTML = `
             <div class="menu-item">
@@ -564,16 +455,21 @@ function editMenuItem(itemId) {
     if (!item) return;
 
     editingItemId = itemId;
-    document.getElementById('new-name').value = item.name_zh;
-    document.getElementById('new-desc').value = item.desc_zh || '';
+    document.getElementById('new-name-zh').value = item.name_zh || '';
+    document.getElementById('new-desc-zh').value = item.desc_zh || '';
+    document.getElementById('new-name-en').value = item.name_en || '';
+    document.getElementById('new-desc-en').value = item.desc_en || '';
+    document.getElementById('new-name-jp').value = item.name_jp || '';
+    document.getElementById('new-desc-jp').value = item.desc_jp || '';
+    document.getElementById('new-name-kr').value = item.name_kr || '';
+    document.getElementById('new-desc-kr').value = item.desc_kr || '';
     document.getElementById('new-category').value = item.category || '熱炒';
     document.getElementById('new-price').value = item.price;
     document.getElementById('new-img').value = ''; 
 
     const saveBtn = document.getElementById('ui-save-btn');
     saveBtn.innerText = "確認修改餐點";
-    saveBtn.style.background = "#ffc107";
-    saveBtn.style.color = "#000";
+    saveBtn.style.background = "#d69e2e";
 
     document.getElementById('ui-cancel-btn').style.display = "block";
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -581,15 +477,20 @@ function editMenuItem(itemId) {
 
 function cancelEdit() {
     editingItemId = null;
-    document.getElementById('new-name').value = '';
-    document.getElementById('new-desc').value = '';
+    document.getElementById('new-name-zh').value = '';
+    document.getElementById('new-desc-zh').value = '';
+    document.getElementById('new-name-en').value = '';
+    document.getElementById('new-desc-en').value = '';
+    document.getElementById('new-name-jp').value = '';
+    document.getElementById('new-desc-jp').value = '';
+    document.getElementById('new-name-kr').value = '';
+    document.getElementById('new-desc-kr').value = '';
     document.getElementById('new-price').value = '';
     document.getElementById('new-img').value = '';
     
     const saveBtn = document.getElementById('ui-save-btn');
-    saveBtn.innerText = uiTexts[currentLang].saveBtn;
+    saveBtn.innerText = "儲存新餐點";
     saveBtn.style.background = "#007BFF";
-    saveBtn.style.color = "#fff";
 
     document.getElementById('ui-cancel-btn').style.display = "none";
 }
@@ -604,14 +505,20 @@ function deleteMenuItem(itemId) {
 }
 
 function addNewItem() {
-    const name = document.getElementById('new-name').value;
-    const desc = document.getElementById('new-desc').value;
+    const nameZh = document.getElementById('new-name-zh').value;
+    const descZh = document.getElementById('new-desc-zh').value;
+    const nameEn = document.getElementById('new-name-en').value;
+    const descEn = document.getElementById('new-desc-en').value;
+    const nameJp = document.getElementById('new-name-jp').value;
+    const descJp = document.getElementById('new-desc-jp').value;
+    const nameKr = document.getElementById('new-name-kr').value;
+    const descKr = document.getElementById('new-desc-kr').value;
     const category = document.getElementById('new-category').value;
     const price = parseInt(document.getElementById('new-price').value);
     const fileInput = document.getElementById('new-img');
 
-    if (!name || !desc || isNaN(price)) {
-        alert("⚠️ 請填寫完整資訊 (名稱、簡介、價格)！");
+    if (!nameZh || !descZh || isNaN(price)) {
+        alert("⚠️ 請至少填寫中文名稱、中文簡介與價格！");
         return;
     }
 
@@ -619,8 +526,14 @@ function addNewItem() {
         const item = menuData.find(i => i.id === editingItemId);
         if (!item) return;
 
-        item.name_zh = name;
-        item.desc_zh = desc;
+        item.name_zh = nameZh;
+        item.desc_zh = descZh;
+        item.name_en = nameEn;
+        item.desc_en = descEn;
+        item.name_jp = nameJp;
+        item.desc_jp = descJp;
+        item.name_kr = nameKr;
+        item.desc_kr = descKr;
         item.category = category;
         item.price = price;
 
@@ -629,11 +542,11 @@ function addNewItem() {
             const reader = new FileReader();
             reader.onload = function(e) {
                 item.image_url = e.target.result;
-                saveMenuToFirebase(name);
+                saveMenuToFirebase(nameZh);
             };
             reader.readAsDataURL(file);
         } else {
-            saveMenuToFirebase(name);
+            saveMenuToFirebase(nameZh);
         }
     } else {
         if (!fileInput.files[0]) {
@@ -650,12 +563,18 @@ function addNewItem() {
                 price: price,
                 category: category,
                 image_url: e.target.result,
-                name_zh: name, 
-                desc_zh: desc
+                name_zh: nameZh, 
+                desc_zh: descZh,
+                name_en: nameEn,
+                desc_en: descEn,
+                name_jp: nameJp,
+                desc_jp: descJp,
+                name_kr: nameKr,
+                desc_kr: descKr
             };
 
             menuData.push(newItem);
-            saveMenuToFirebase(name);
+            saveMenuToFirebase(nameZh);
         };
         reader.readAsDataURL(file);
     }
