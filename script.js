@@ -132,38 +132,90 @@ let editingItemId = null;
 let cart = []; 
 let salesChartInstance = null; 
 
-// === 智慧自動翻譯與拆解引擎 ===
+// === 智慧自動翻譯與拆解組合引擎 ===
 function smartTranslate(text, lang) {
     if (!text || lang === 'zh') return text;
     
-    const dict = {
-        // 食材
+    const dictionary = {
+        // 青菜類
         "空心菜": { en: "Water Spinach", jp: "空心菜", kr: "공심채" },
         "高麗菜": { en: "Cabbage", jp: "キャベツ", kr: "양배추" },
-        "燙蝦子": { en: "Boiled Shrimp", jp: "エビの湯引き", kr: "데친 새우" },
+        "水蓮": { en: "White Water Snowflake", jp: "タイワンアサザ", kr: "백련초" },
+        "地瓜葉": { en: "Sweet Potato Leaves", jp: "サツマイモの葉", kr: "고구마 줄기" },
+        "四季豆": { en: "Green Beans", jp: "インゲン豆", kr: "줄콩" },
+        
+        // 肉類與海鮮
+        "牛肉": { en: "Beef", jp: "牛肉", kr: "소고기" },
+        "豬肉": { en: "Pork", jp: "豚肉", kr: "돼지고기" },
+        "雞肉": { en: "Chicken", jp: "鶏肉", kr: "닭고기" },
+        "雞丁": { en: "Chicken Cubes", jp: "鶏肉", kr: "닭고기" },
         "蝦子": { en: "Shrimp", jp: "エビ", kr: "새우" },
-        "魚下巴": { en: "Grilled Fish Collar", jp: "魚のカマ焼き", kr: "생선 턱살 구이" },
+        "蛤蜊": { en: "Clams", jp: "ハマグリ", kr: "조개" },
+        "中卷": { en: "Squid", jp: "イカ", kr: "오징어" },
+        "透抽": { en: "Squid", jp: "イカ", kr: "오징어" },
+        "魚下巴": { en: "Fish Collar", jp: "魚のカマ", kr: "생선 턱살" },
+        "鯖魚": { en: "Mackerel", jp: "サバ", kr: "고등어" },
+        "秋刀魚": { en: "Saury", jp: "サンマ", kr: "꽁치" },
+        "豆干肉絲": { en: "Pork with Dried Tofu", jp: "豚肉と干し豆腐", kr: "말린 두부 돼지고기" },
+        "金沙豆腐": { en: "Tofu with Salted Egg Yolk", jp: "豆腐の塩漬け卵黄", kr: "소금계란 두부" },
+        "燙蝦子": { en: "Boiled Shrimp", jp: "エビの湯引き", kr: "데친 새우" },
         "烤鯖魚": { en: "Grilled Mackerel", jp: "サバの塩焼き", kr: "고등어 구이" },
         "烤秋刀魚": { en: "Grilled Saury", jp: "サンマの塩焼き", kr: "꽁치 구이" },
-        "豆干肉絲": { en: "Stir-fried Pork with Dried Tofu", jp: "豚肉と干し豆腐の炒め物", kr: "말린 두부와 돼지고기 볶음" },
-        "金沙豆腐": { en: "Tofu with Salted Egg Yolk", jp: "豆腐の塩漬け卵黄炒め", kr: "소금 蛋 두부 볶음" },
-        
-        // 烹調法與形容詞
-        "清炒": { en: "Stir-fried", jp: "さっぱり炒め", kr: "살짝 볶은" },
-        "蒜炒": { en: "Stir-fried with Garlic", jp: "ニンニク炒め", kr: "마늘 볶음" },
-        "現炒": { en: "Freshly Stir-fried", jp: "作り立ての炒め物", kr: "갓 볶은 요리" },
-        "新鮮": { en: "Fresh", jp: "新鮮な", kr: "신선한" }
+
+        // 常用形容詞與簡介詞彙
+        "新鮮現燙大蝦": { en: "Freshly boiled large shrimp", jp: "新鮮でジューシーなエビの湯引き", kr: "신선하게 데친 대하" },
+        "燒烤新鮮魚下巴": { en: "Fresh grilled fish collar with crisp skin", jp: "香ばしく焼き上げた新鮮な魚のカマ", kr: "바삭하게 구운 신선한 생선 턱살" },
+        "特製醬料現炒": { en: "Freshly stir-fried with chef's special sauce", jp: "シェフ特製の秘伝ダレで炒めた一品", kr: "주방장 특제 소스로 갓 볶아낸 요리" },
+        "鮮甜": { en: "Fresh and Sweet", jp: "新鮮で甘みがある", kr: "신선하고 달콤한" },
+        "香酥": { en: "Crispy and Fragrant", jp: "サクサク香ばしい", kr: "바삭하고 고소한" }
     };
 
-    if (dict[text]) {
-        return dict[text][lang];
+    // 1. 完全符合字典
+    if (dictionary[text]) {
+        return dictionary[text][lang];
     }
 
-    // 智慧動態拆解替換
+    // 2. 智慧組合拆解（例如：清炒空心菜 $\rightarrow$ Stir-fried Water Spinach）
+    const methods = {
+        "清炒": { en: "Stir-fried", jp: "炒め", kr: "볶음" },
+        "蒜炒": { en: "Stir-fried with Garlic", jp: "ニンニク炒め", kr: "마늘볶음" },
+        "蔥爆": { en: "Stir-fried with Scallions", jp: "ネギ炒め", kr: "파볶음" },
+        "宮保": { en: "Kung Pao", jp: "宮保風", kr: "쿵보" },
+        "三杯": { en: "Three-Cup", jp: "三杯", kr: "싼베이" },
+        "金沙": { en: "Salted Egg Yolk", jp: "塩漬け卵黄", kr: "소금계란" },
+        "沙茶": { en: "Sacha Sauce", jp: "沙茶ソース", kr: "사차" },
+        "鐵板": { en: "Teppanyaki", jp: "鉄板焼き", kr: "철판" },
+        "椒鹽": { en: "Salt and Pepper", jp: "塩胡椒", kr: "소금후추" }
+    };
+
+    let methodEn = "", methodJp = "", methodKr = "";
+    let ingredientText = text;
+
+    for (let m in methods) {
+        if (text.startsWith(m)) {
+            methodEn = methods[m].en;
+            methodJp = methods[m].jp;
+            methodKr = methods[m].kr;
+            ingredientText = text.replace(m, "").trim();
+            break;
+        }
+    }
+
+    let ingEn = dictionary[ingredientText] ? dictionary[ingredientText].en : ingredientText;
+    let ingJp = dictionary[ingredientText] ? dictionary[ingredientText].jp : ingredientText;
+    let ingKr = dictionary[ingredientText] ? dictionary[ingredientText].kr : ingredientText;
+
+    if (methodEn) {
+        if (lang === 'en') return `${methodEn} ${ingEn}`;
+        if (lang === 'jp') return `${ingJp}の${methodJp}`;
+        if (lang === 'kr') return `${ingKr} ${methodKr}`;
+    }
+
+    // 3. 部分詞彙替換
     let translated = text;
-    for (let key in dict) {
+    for (let key in dictionary) {
         if (translated.includes(key)) {
-            translated = translated.replace(new RegExp(key, 'g'), dict[key][lang]);
+            translated = translated.replace(new RegExp(key, 'g'), dictionary[key][lang]);
         }
     }
 
@@ -171,14 +223,14 @@ function smartTranslate(text, lang) {
         return translated;
     }
 
-    // 通用後綴
+    // 4. 預設防呆備援
     if (lang === 'en') return text + " (Special Dish)";
     if (lang === 'jp') return text + " (特製料理)";
     if (lang === 'kr') return text + " (특선 요리)";
     return text;
 }
 
-// === 即時監聽後台輸入框，實現打字自動翻譯聯動 ===
+// === 即時監聽後台中文輸入，打字時自動聯動翻譯 ===
 document.addEventListener("DOMContentLoaded", () => {
     const nameZhInput = document.getElementById('new-name-zh');
     const descZhInput = document.getElementById('new-desc-zh');
