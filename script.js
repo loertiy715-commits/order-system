@@ -132,65 +132,54 @@ let editingItemId = null;
 let cart = []; 
 let salesChartInstance = null; 
 
-// === 智慧自動翻譯字典庫 ===
+// === 智慧自動翻譯與拆解引擎 ===
 function smartTranslate(text, lang) {
     if (!text || lang === 'zh') return text;
+    
     const dict = {
-        "燙蝦子": { 
-            en: "Boiled Shrimp", 
-            jp: "エビの湯引き", 
-            kr: "데친 새우" 
-        },
-        "魚下巴": { 
-            en: "Grilled Fish Collar", 
-            jp: "魚のカマ焼き", 
-            kr: "생선 턱살 구이" 
-        },
-        "烤鯖魚": { 
-            en: "Grilled Mackerel", 
-            jp: "サバの塩焼き", 
-            kr: "고등어 구이" 
-        },
-        "烤秋刀魚": { 
-            en: "Grilled Saury", 
-            jp: "サンマの塩焼き", 
-            kr: "꽁치 구이" 
-        },
-        "豆干肉絲": { 
-            en: "Stir-fried Pork with Dried Tofu", 
-            jp: "豚肉と干し豆腐の炒め物", 
-            kr: "말린 두부와 돼지고기 볶음" 
-        },
-        "金沙豆腐": { 
-            en: "Tofu with Salted Egg Yolk", 
-            jp: "豆腐の塩漬け卵黄炒め", 
-            kr: "소금 蛋 두부 볶음" 
-        },
-        "新鮮現燙大蝦": { 
-            en: "Freshly boiled large shrimp", 
-            jp: "新鮮でジューシーなエビの湯引き", 
-            kr: "신선하게 데친 대하" 
-        },
-        "燒烤新鮮魚下巴": { 
-            en: "Fresh grilled fish collar with crisp skin", 
-            jp: "香ばしく焼き上げた新鮮な魚のカマ", 
-            kr: "바삭하게 구운 신선한 생선 턱살" 
-        }
+        // 食材
+        "空心菜": { en: "Water Spinach", jp: "空心菜", kr: "공심채" },
+        "高麗菜": { en: "Cabbage", jp: "キャベツ", kr: "양배추" },
+        "燙蝦子": { en: "Boiled Shrimp", jp: "エビの湯引き", kr: "데친 새우" },
+        "蝦子": { en: "Shrimp", jp: "エビ", kr: "새우" },
+        "魚下巴": { en: "Grilled Fish Collar", jp: "魚のカマ焼き", kr: "생선 턱살 구이" },
+        "烤鯖魚": { en: "Grilled Mackerel", jp: "サバの塩焼き", kr: "고등어 구이" },
+        "烤秋刀魚": { en: "Grilled Saury", jp: "サンマの塩焼き", kr: "꽁치 구이" },
+        "豆干肉絲": { en: "Stir-fried Pork with Dried Tofu", jp: "豚肉と干し豆腐の炒め物", kr: "말린 두부와 돼지고기 볶음" },
+        "金沙豆腐": { en: "Tofu with Salted Egg Yolk", jp: "豆腐の塩漬け卵黄炒め", kr: "소금 蛋 두부 볶음" },
+        
+        // 烹調法與形容詞
+        "清炒": { en: "Stir-fried", jp: "さっぱり炒め", kr: "살짝 볶은" },
+        "蒜炒": { en: "Stir-fried with Garlic", jp: "ニンニク炒め", kr: "마늘 볶음" },
+        "現炒": { en: "Freshly Stir-fried", jp: "作り立ての炒め物", kr: "갓 볶은 요리" },
+        "新鮮": { en: "Fresh", jp: "新鮮な", kr: "신선한" }
     };
 
-    if (dict[text] && dict[text][lang]) {
+    if (dict[text]) {
         return dict[text][lang];
     }
 
-    // 通用後綴備援
+    // 智慧動態拆解替換
+    let translated = text;
+    for (let key in dict) {
+        if (translated.includes(key)) {
+            translated = translated.replace(new RegExp(key, 'g'), dict[key][lang]);
+        }
+    }
+
+    if (translated !== text) {
+        return translated;
+    }
+
+    // 通用後綴
     if (lang === 'en') return text + " (Special Dish)";
     if (lang === 'jp') return text + " (特製料理)";
     if (lang === 'kr') return text + " (특선 요리)";
     return text;
 }
 
-// === 監聽後台中文輸入，自動帶入翻譯 ===
-setTimeout(() => {
+// === 即時監聽後台輸入框，實現打字自動翻譯聯動 ===
+document.addEventListener("DOMContentLoaded", () => {
     const nameZhInput = document.getElementById('new-name-zh');
     const descZhInput = document.getElementById('new-desc-zh');
 
@@ -211,7 +200,7 @@ setTimeout(() => {
             document.getElementById('new-desc-kr').value = smartTranslate(val, 'kr');
         });
     }
-}, 500);
+});
 
 db.ref('restaurant_menu').on('value', (snapshot) => {
     let data = snapshot.val();
