@@ -132,7 +132,7 @@ let editingItemId = null;
 let cart = []; 
 let salesChartInstance = null; 
 
-// === 智慧自動翻譯字典庫 (當資料庫沒填寫時的自動補丁) ===
+// === 智慧自動翻譯字典庫 ===
 function smartTranslate(text, lang) {
     if (!text || lang === 'zh') return text;
     const dict = {
@@ -161,6 +161,11 @@ function smartTranslate(text, lang) {
             jp: "豚肉と干し豆腐の炒め物", 
             kr: "말린 두부와 돼지고기 볶음" 
         },
+        "金沙豆腐": { 
+            en: "Tofu with Salted Egg Yolk", 
+            jp: "豆腐の塩漬け卵黄炒め", 
+            kr: "소금 蛋 두부 볶음" 
+        },
         "新鮮現燙大蝦": { 
             en: "Freshly boiled large shrimp", 
             jp: "新鮮でジューシーなエビの湯引き", 
@@ -183,6 +188,30 @@ function smartTranslate(text, lang) {
     if (lang === 'kr') return text + " (특선 요리)";
     return text;
 }
+
+// === 監聽後台中文輸入，自動帶入翻譯 ===
+setTimeout(() => {
+    const nameZhInput = document.getElementById('new-name-zh');
+    const descZhInput = document.getElementById('new-desc-zh');
+
+    if (nameZhInput) {
+        nameZhInput.addEventListener('input', (e) => {
+            const val = e.target.value;
+            document.getElementById('new-name-en').value = smartTranslate(val, 'en');
+            document.getElementById('new-name-jp').value = smartTranslate(val, 'jp');
+            document.getElementById('new-name-kr').value = smartTranslate(val, 'kr');
+        });
+    }
+
+    if (descZhInput) {
+        descZhInput.addEventListener('input', (e) => {
+            const val = e.target.value;
+            document.getElementById('new-desc-en').value = smartTranslate(val, 'en');
+            document.getElementById('new-desc-jp').value = smartTranslate(val, 'jp');
+            document.getElementById('new-desc-kr').value = smartTranslate(val, 'kr');
+        });
+    }
+}, 500);
 
 db.ref('restaurant_menu').on('value', (snapshot) => {
     let data = snapshot.val();
@@ -294,7 +323,6 @@ function renderFilteredMenu() {
     }
 
     filteredItems.forEach(item => {
-        // === 智慧防呆：如果資料庫有手動填寫外文且不等於中文，就用手動的；否則自動調用 smartTranslate ===
         let dbName = item[`name_${currentLang}`];
         let primaryName = (currentLang === 'zh') ? item.name_zh : 
                           ((dbName && dbName.trim() !== "" && dbName !== item.name_zh) ? dbName : smartTranslate(item.name_zh, currentLang));
