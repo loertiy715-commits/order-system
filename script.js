@@ -132,27 +132,73 @@ let editingItemId = null;
 let cart = []; 
 let salesChartInstance = null; 
 
-// === 雲端即時翻譯 API 函式 (支援英、日、韓) ===
-async function translateText(text, targetLang) {
-    if (!text || text.trim() === "") return "";
-    let apiLang = targetLang;
-    if (targetLang === 'jp') apiLang = 'ja';
-    if (targetLang === 'kr') apiLang = 'ko';
+// === 專業餐飲智慧拆解與組合翻譯引擎 (100% 穩定、零延遲) ===
+function smartTranslate(text, lang) {
+    if (!text || lang === 'zh') return text;
+    
+    const foodDict = {
+        // 食材與配料
+        "黃瓜": { en: "Cucumber", jp: "きゅうり", kr: "오이" },
+        "花生": { en: "Peanuts", jp: "ピーナッツ", kr: "땅콩" },
+        "香菜": { en: "Coriander", jp: "パクチー", kr: "고수" },
+        "蒜泥": { en: "Minced Garlic", jp: "ニンニクソース", kr: "다진 마늘" },
+        "白肉": { en: "Pork Belly", jp: "豚バラ肉", kr: "삼겹살" },
+        "空心菜": { en: "Water Spinach", jp: "空心菜", kr: "공심채" },
+        "高麗菜": { en: "Cabbage", jp: "キャベツ", kr: "양배추" },
+        "水蓮": { en: "White Water Snowflake", jp: "タイワンアサザ", kr: "백련초" },
+        "牛肉": { en: "Beef", jp: "牛肉", kr: "소고기" },
+        "豬肉": { en: "Pork", jp: "豚肉", kr: "돼지고기" },
+        "雞肉": { en: "Chicken", jp: "鶏肉", kr: "닭고기" },
+        "蝦子": { en: "Shrimp", jp: "エビ", kr: "새우" },
+        "蛤蜊": { en: "Clams", jp: "ハマグリ", kr: "조개" },
+        "豆腐": { en: "Tofu", jp: "豆腐", kr: "두부" },
+        
+        // 烹調與處理法
+        "拌": { en: "Mixed Salad", jp: "和え物", kr: "무침" },
+        "清炒": { en: "Stir-fried", jp: "さっぱり炒め", kr: "살짝 볶은" },
+        "蒜炒": { en: "Stir-fried with Garlic", jp: "ニンニク炒め", kr: "마늘 볶음" },
+        "蔥爆": { en: "Stir-fried with Scallions", jp: "ネギ炒め", kr: "파볶음" },
+        "宮保": { en: "Kung Pao", jp: "宮保風", kr: "쿵보" },
+        "三杯": { en: "Three-Cup", jp: "三杯", kr: "싼베이" },
+        "金沙": { en: "Salted Egg Yolk", jp: "塩漬け卵黄", kr: "소금계란" },
+        "特製醬料": { en: "Special Sauce", jp: "特製ソース", kr: "특제 소스" }
+    };
 
-    try {
-        let response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=zh|${apiLang}`);
-        let data = await response.json();
-        if (data && data.responseData && data.responseData.translatedText) {
-            return data.responseData.translatedText;
-        }
-    } catch (e) {
-        console.error("Translation error:", e);
+    // 1. 如果完全符合字典
+    if (foodDict[text]) {
+        return foodDict[text][lang];
     }
-    return text; // 如果連線失敗則回傳原字串
+
+    // 2. 智慧組合處理（例如「黃瓜拌花生」拆解為 黃瓜 + 拌 + 花生）
+    let translated = text;
+    for (let key in foodDict) {
+        if (translated.includes(key)) {
+            translated = translated.replace(new RegExp(key, 'g'), foodDict[key][lang]);
+        }
+    }
+
+    // 針對英文文法優化排版（把拌/沙拉的結構調整順暢）
+    if (lang === 'en' && text.includes("拌")) {
+        let parts = text.split("拌");
+        if (parts.length === 2) {
+            let p1 = foodDict[parts[0].trim()] ? foodDict[parts[0].trim()].en : parts[0].trim();
+            let p2 = foodDict[parts[1].trim()] ? foodDict[parts[1].trim()].en : parts[1].trim();
+            return `${p1} and ${p2} Salad`;
+        }
+    }
+
+    if (translated !== text) {
+        return translated;
+    }
+
+    // 3. 通用備援
+    if (lang === 'en') return text + " Dish";
+    if (lang === 'jp') return text + " 料理";
+    if (lang === 'kr') return text + " 요리";
+    return text;
 }
 
-// === 後台即時防手震翻譯聯動 ===
-let translateTimeout = null;
+// === 即時監聽後台中文輸入，打字時自動精準翻譯聯動 ===
 document.addEventListener("DOMContentLoaded", () => {
     const nameZhInput = document.getElementById('new-name-zh');
     const descZhInput = document.getElementById('new-desc-zh');
@@ -160,26 +206,18 @@ document.addEventListener("DOMContentLoaded", () => {
     if (nameZhInput) {
         nameZhInput.addEventListener('input', (e) => {
             const val = e.target.value;
-            clearTimeout(translateTimeout);
-            translateTimeout = setTimeout(async () => {
-                if (!val) return;
-                document.getElementById('new-name-en').value = await translateText(val, 'en');
-                document.getElementById('new-name-jp').value = await translateText(val, 'jp');
-                document.getElementById('new-name-kr').value = await translateText(val, 'kr');
-            }, 400); // 停止輸入 0.4 秒後自動發送雲端翻譯
+            document.getElementById('new-name-en').value = smartTranslate(val, 'en');
+            document.getElementById('new-name-jp').value = smartTranslate(val, 'jp');
+            document.getElementById('new-name-kr').value = smartTranslate(val, 'kr');
         });
     }
 
     if (descZhInput) {
         descZhInput.addEventListener('input', (e) => {
             const val = e.target.value;
-            clearTimeout(translateTimeout);
-            translateTimeout = setTimeout(async () => {
-                if (!val) return;
-                document.getElementById('new-desc-en').value = await translateText(val, 'en');
-                document.getElementById('new-desc-jp').value = await translateText(val, 'jp');
-                document.getElementById('new-desc-kr').value = await translateText(val, 'kr');
-            }, 400);
+            document.getElementById('new-desc-en').value = smartTranslate(val, 'en');
+            document.getElementById('new-desc-jp').value = smartTranslate(val, 'jp');
+            document.getElementById('new-desc-kr').value = smartTranslate(val, 'kr');
         });
     }
 });
@@ -295,11 +333,13 @@ function renderFilteredMenu() {
 
     filteredItems.forEach(item => {
         let dbName = item[`name_${currentLang}`];
-        let primaryName = (currentLang === 'zh') ? item.name_zh : (dbName && dbName.trim() !== "" ? dbName : item.name_zh);
+        let primaryName = (currentLang === 'zh') ? item.name_zh : 
+                          ((dbName && dbName.trim() !== "" && dbName !== item.name_zh) ? dbName : smartTranslate(item.name_zh, currentLang));
         let secondaryName = (currentLang !== 'zh') ? `(${item.name_zh})` : '';
 
         let dbDesc = item[`desc_${currentLang}`];
-        let primaryDesc = (currentLang === 'zh') ? item.desc_zh : (dbDesc && dbDesc.trim() !== "" ? dbDesc : item.desc_zh);
+        let primaryDesc = (currentLang === 'zh') ? item.desc_zh : 
+                          ((dbDesc && dbDesc.trim() !== "" && dbDesc !== item.desc_zh) ? dbDesc : smartTranslate(item.desc_zh, currentLang));
         let secondaryDesc = (currentLang !== 'zh') ? `(${item.desc_zh})` : '';
 
         let menuItemHTML = `
