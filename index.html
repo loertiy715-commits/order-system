@@ -7,9 +7,10 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- Firebase 雲端連線工具 -->
+    <!-- 引入 Firebase 核心、資料庫、儲存空間 (重要！新增了 storage) -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 </head>
 <body>
     <!-- 畫面一：選擇語系 -->
@@ -30,10 +31,7 @@
             <button id="ui-back-lang" onclick="backToLang()">⬅️ 返回語言選擇</button>
             <button id="ui-cart-btn" onclick="showCart()">🛒 購物車 (<span id="cart-count">0</span>)</button>
         </div>
-        
-        <!-- 左右滑動分類列 -->
         <div class="category-scroll-container" id="category-scroll"></div>
-
         <div id="menu-container"></div>
     </div>
 
@@ -67,7 +65,7 @@
                         <input type="file" id="new-img" accept="image/*">
                     </div>
 
-                    <div class="form-full" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="form-full" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
                         <div>
                             <label>2. 餐點分類:</label>
                             <select id="new-category">
@@ -84,6 +82,9 @@
                         <div>
                             <label>3. 價格 (NT$):</label>
                             <input type="number" id="new-price" min="0" placeholder="例如：150">
+                        </div>
+                        <div style="display: flex; align-items: flex-end; padding-bottom: 12px;">
+                            <button id="ui-translate-btn" onclick="aiTranslateAll()" style="background: #8e44ad; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight:bold; width:100%;">🤖 AI 一键翻译</button>
                         </div>
                     </div>
 
