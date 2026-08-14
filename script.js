@@ -136,7 +136,6 @@ let salesChartInstance = null;
 async function translateWithGoogle(text, targetLang) {
     if (!text || text.trim() === "") return "";
     try {
-        // 將系統語言代碼對應為 Google 的代碼
         let tl = targetLang;
         if (targetLang === 'jp') tl = 'ja';
         if (targetLang === 'kr') tl = 'ko';
@@ -145,18 +144,17 @@ async function translateWithGoogle(text, targetLang) {
         const response = await fetch(url);
         const data = await response.json();
         
-        // Google 回傳的格式為陣列，我們將翻譯片段提取並組合
         if (data && data[0]) {
             return data[0].map(segment => segment[0]).join('');
         }
         return text;
     } catch (error) {
         console.error("Google 翻譯 API 連線錯誤:", error);
-        return text; // 失敗時保持原樣
+        return text; 
     }
 }
 
-// === 2. 舊資料的備用翻譯字典 (當前台客人載入舊菜色時備用) ===
+// === 2. 舊資料的備用翻譯字典 ===
 function fallbackTranslate(text, lang) {
     if (!text || lang === 'zh') return text;
     const dict = {
@@ -180,7 +178,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const val = document.getElementById(inputId).value;
         clearTimeout(translateTimeout);
         
-        // 如果清空輸入框，就一併清空翻譯
         if (!val.trim()) {
             document.getElementById(`new-${type}-en`).value = "";
             document.getElementById(`new-${type}-jp`).value = "";
@@ -188,7 +185,6 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // 停止打字 0.8 秒後，顯示「翻譯中...」並呼叫 Google 翻譯
         translateTimeout = setTimeout(async () => {
             document.getElementById(`new-${type}-en`).value = "翻譯中...";
             document.getElementById(`new-${type}-jp`).value = "翻譯中...";
@@ -212,14 +208,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
+// === 4. 資料庫讀取 (防呆與防止清空機制) ===
 db.ref('restaurant_menu').on('value', (snapshot) => {
     let data = snapshot.val();
     if (data) {
-        menuData = Array.isArray(data) ? data : Object.values(data);
+        // 過濾掉可能被意外刪除產生的 null 空位
+        menuData = (Array.isArray(data) ? data : Object.values(data)).filter(item => item !== null);
     } else {
         menuData = defaultMenu;
-        db.ref('restaurant_menu').set(defaultMenu);
+        // 注意：這裡不再自動覆蓋寫入，避免網路錯誤時清空整個資料庫
     }
+    
     if (document.getElementById('menu-screen').style.display === 'block') {
         renderMenu();
     }
@@ -594,6 +593,32 @@ function deleteMenuItem(itemId) {
     }
 }
 
+// === 5. 自動壓縮圖片，防止 Firebase 負載過大而儲存失敗 ===
+function compressAndSaveImage(file, callback) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 800; // 將圖片限制寬度
+            let scaleSize = 1;
+            if (img.width > MAX_WIDTH) {
+                scaleSize = MAX_WIDTH / img.width;
+            }
+            canvas.width = img.width * scaleSize;
+            canvas.height = img.height * scaleSize;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            
+            // 壓縮成 80% 畫質的 JPEG
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8); 
+            callback(compressedDataUrl);
+        }
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
 function addNewItem() {
     const nameZh = document.getElementById('new-name-zh').value;
     const descZh = document.getElementById('new-desc-zh').value;
@@ -628,13 +653,10 @@ function addNewItem() {
         item.price = price;
 
         if (fileInput.files[0]) {
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                item.image_url = e.target.result;
+            compressAndSaveImage(fileInput.files[0], function(compressedImg) {
+                item.image_url = compressedImg;
                 saveMenuToFirebase(nameZh);
-            };
-            reader.readAsDataURL(file);
+            });
         } else {
             saveMenuToFirebase(nameZh);
         }
@@ -643,16 +665,13 @@ function addNewItem() {
             alert("⚠️ 請選擇要上傳的餐點圖片！");
             return;
         }
-        const fileInputFile = fileInput.files[0];
-        const reader = new FileReader();
-
-        reader.onload = function(e) {
+        compressAndSaveImage(fileInput.files[0], function(compressedImg) {
             const newId = "A_" + new Date().getTime();
             const newItem = {
                 id: newId,
                 price: price,
                 category: category,
-                image_url: e.target.result,
+                image_url: compressedImg,
                 name_zh: nameZh, 
                 desc_zh: descZh,
                 name_en: nameEn,
@@ -665,8 +684,7 @@ function addNewItem() {
 
             menuData.push(newItem);
             saveMenuToFirebase(nameZh);
-        };
-        reader.readAsDataURL(fileInputFile);
+        });
     }
 }
 
