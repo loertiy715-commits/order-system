@@ -113,17 +113,6 @@ const categoriesMap = {
     "鐵板": { zh: "鐵板", en: "Teppanyaki", jp: "鉄板焼き", kr: "철판요리" }
 };
 
-const defaultMenu = [
-    {
-        id: "A001", price: 180, category: "熱炒",
-        image_url: "https://images.unsplash.com/photo-1585032226651-759b368d7246?w=400", 
-        name_zh: "經典牛肉麵", desc_zh: "慢熬牛骨湯頭搭配手工麵條",
-        name_en: "Classic Beef Noodle Soup", desc_en: "Slow-cooked beef bone broth with hand-pulled noodles",
-        name_jp: "定番の牛肉麺", desc_jp: "じっくり煮込んだ牛骨スープと手作り麺",
-        name_kr: "클래식 우육면", desc_kr: "천천히 끓인 소사골 육수와 수제 면"
-    }
-];
-
 let menuData = [];
 let savedOrders = [];
 let currentLang = 'zh'; 
@@ -132,7 +121,7 @@ let editingItemId = null;
 let cart = []; 
 let salesChartInstance = null; 
 
-// === 1. 直接串接 Google Translate 隱藏版引擎 API ===
+// === 1. 直接串接 Google Translate API ===
 async function translateWithGoogle(text, targetLang) {
     if (!text || text.trim() === "") return "";
     try {
@@ -154,7 +143,7 @@ async function translateWithGoogle(text, targetLang) {
     }
 }
 
-// === 2. 舊資料的備用翻譯字典 ===
+// === 2. 舊資料的備用翻譯 ===
 function fallbackTranslate(text, lang) {
     if (!text || lang === 'zh') return text;
     const dict = {
@@ -208,15 +197,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-// === 4. 資料庫讀取 (防呆與防止清空機制) ===
+// === 4. 資料庫讀取 ===
 db.ref('restaurant_menu').on('value', (snapshot) => {
     let data = snapshot.val();
     if (data) {
-        // 過濾掉可能被意外刪除產生的 null 空位
         menuData = (Array.isArray(data) ? data : Object.values(data)).filter(item => item !== null);
     } else {
-        menuData = defaultMenu;
-        // 注意：這裡不再自動覆蓋寫入，避免網路錯誤時清空整個資料庫
+        menuData = [];
     }
     
     if (document.getElementById('menu-screen').style.display === 'block') {
@@ -525,13 +512,13 @@ function renderAdminMenu() {
         container.innerHTML = "<p>目前沒有任何餐點。</p>";
         return;
     }
-    menuData.forEach(item => {
+    menuData.forEach((item, index) => {
         let html = `
             <div class="admin-menu-item">
                 <span>[${item.category || '未分類'}] ${item.name_zh} (NT$ ${item.price})</span>
                 <div class="admin-menu-actions">
                     <button class="edit-btn" onclick="editMenuItem('${item.id}')">✏️ 編輯餐點</button>
-                    <button class="delete-btn" onclick="deleteMenuItem('${item.id}')">🗑️ 刪除餐點</button>
+                    <button class="delete-btn" onclick="deleteMenuItem(${index})">🗑️ 刪除</button>
                 </div>
             </div>
         `;
@@ -584,11 +571,14 @@ function cancelEdit() {
     document.getElementById('ui-cancel-btn').style.display = "none";
 }
 
-function deleteMenuItem(itemId) {
+// ⚠️ 【防卡死修改】刪除餐點只更新特定欄位或陣列
+function deleteMenuItem(index) {
     if (confirm("確定要刪除這道餐點嗎？")) {
-        const updatedMenu = menuData.filter(item => item.id !== itemId);
-        db.ref('restaurant_menu').set(updatedMenu).then(() => {
+        menuData.splice(index, 1);
+        db.ref('restaurant_menu').set(menuData).then(() => {
             alert("已成功刪除！");
+        }).catch(err => {
+            alert("刪除失敗：" + err);
         });
     }
 }
@@ -610,7 +600,7 @@ function compressAndSaveImage(file, callback) {
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
             
-            // 壓縮成 80% 畫質的 JPEG
+            // 壓縮成 80% 畫質的 JPEG (極大幅度減少體積)
             const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8); 
             callback(compressedDataUrl);
         }
@@ -619,6 +609,7 @@ function compressAndSaveImage(file, callback) {
     reader.readAsDataURL(file);
 }
 
+// ⚠️ 【防卡死修改】編輯時只送出「局部文字」，不重傳大照片
 function addNewItem() {
     const nameZh = document.getElementById('new-name-zh').value;
     const descZh = document.getElementById('new-desc-zh').value;
@@ -638,27 +629,32 @@ function addNewItem() {
     }
 
     if (editingItemId) {
-        const item = menuData.find(i => i.id === editingItemId);
-        if (!item) return;
+        const index = menuData.findIndex(i => i.id === editingItemId);
+        if (index === -1) return;
 
-        item.name_zh = nameZh;
-        item.desc_zh = descZh;
-        item.name_en = nameEn;
-        item.desc_en = descEn;
-        item.name_jp = nameJp;
-        item.desc_jp = descJp;
-        item.name_kr = nameKr;
-        item.desc_kr = descKr;
-        item.category = category;
-        item.price = price;
+        // 局部更新物件
+        let updatePayload = {
+            name_zh: nameZh, desc_zh: descZh,
+            name_en: nameEn, desc_en: descEn,
+            name_jp: nameJp, desc_jp: descJp,
+            name_kr: nameKr, desc_kr: descKr,
+            category: category, price: price
+        };
 
         if (fileInput.files[0]) {
             compressAndSaveImage(fileInput.files[0], function(compressedImg) {
-                item.image_url = compressedImg;
-                saveMenuToFirebase(nameZh);
+                updatePayload.image_url = compressedImg;
+                db.ref(`restaurant_menu/${index}`).update(updatePayload).then(() => {
+                    alert(`✅ 成功更新餐點：${nameZh}！`);
+                    cancelEdit();
+                }).catch(err => alert("儲存失敗：" + err));
             });
         } else {
-            saveMenuToFirebase(nameZh);
+            // 如果沒換照片，就只傳送更新的文字給資料庫 (超級省流量)
+            db.ref(`restaurant_menu/${index}`).update(updatePayload).then(() => {
+                alert(`✅ 成功更新餐點：${nameZh}！`);
+                cancelEdit();
+            }).catch(err => alert("儲存失敗：" + err));
         }
     } else {
         if (!fileInput.files[0]) {
@@ -681,18 +677,12 @@ function addNewItem() {
                 name_kr: nameKr,
                 desc_kr: descKr
             };
-
-            menuData.push(newItem);
-            saveMenuToFirebase(nameZh);
+            
+            const newIndex = menuData.length;
+            db.ref(`restaurant_menu/${newIndex}`).set(newItem).then(() => {
+                alert(`✅ 成功新增餐點：${nameZh}！`);
+                cancelEdit();
+            }).catch(err => alert("儲存失敗：" + err));
         });
     }
-}
-
-function saveMenuToFirebase(name) {
-    db.ref('restaurant_menu').set(menuData).then(() => {
-        alert(editingItemId ? `✅ 成功更新餐點：${name}！` : `✅ 成功新增餐點：${name}！`);
-        cancelEdit();
-    }).catch(error => {
-        alert("儲存失敗：" + error);
-    });
 }
