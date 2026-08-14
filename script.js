@@ -19,6 +19,7 @@ const uiTexts = {
         cartBtn: "🛒 購物車",
         backMenu: "⬅️ 繼續點餐",
         cartTitle: "購物車 (訂單明細)",
+        tableLbl: "請輸入桌號：",
         checkoutBtn: "送出訂單",
         logoutAdmin: "⬅️ 登出並返回首頁",
         clearOrders: "🗑️ 清空所有歷史訂單",
@@ -32,6 +33,7 @@ const uiTexts = {
         addCartBtn: "➕ 加入購物車",
         totalText: "總計",
         emptyCart: "購物車是空的喔！",
+        requireTable: "請填寫桌號！",
         orderSuccess: "訂單已送出！老闆已經收到通知囉！"
     },
     en: {
@@ -41,6 +43,7 @@ const uiTexts = {
         cartBtn: "🛒 Cart",
         backMenu: "⬅️ Continue",
         cartTitle: "Cart (Order Details)",
+        tableLbl: "Table No:",
         checkoutBtn: "Submit Order",
         logoutAdmin: "⬅️ Logout & Home",
         clearOrders: "🗑️ Clear All History",
@@ -54,6 +57,7 @@ const uiTexts = {
         addCartBtn: "➕ Add to Cart",
         totalText: "Total",
         emptyCart: "Cart is empty!",
+        requireTable: "Please enter your table number!",
         orderSuccess: "Order submitted! Boss notified!"
     },
     jp: {
@@ -63,6 +67,7 @@ const uiTexts = {
         cartBtn: "🛒 カート",
         backMenu: "⬅️ 注文続行",
         cartTitle: "カート (注文詳細)",
+        tableLbl: "テーブル番号:",
         checkoutBtn: "注文を送信",
         logoutAdmin: "⬅️ ログアウト",
         clearOrders: "🗑️ 履歴をすべてクリア",
@@ -76,6 +81,7 @@ const uiTexts = {
         addCartBtn: "🛒 カートに追加",
         totalText: "合計",
         emptyCart: "カートは空です！",
+        requireTable: "テーブル番号を入力してください！",
         orderSent: "注文を送信しました！"
     },
     kr: {
@@ -85,6 +91,7 @@ const uiTexts = {
         cartBtn: "🛒 장바구니",
         backMenu: "⬅️ 계속 주문",
         cartTitle: "장바구니 (주문 상세)",
+        tableLbl: "테이블 번호:",
         checkoutBtn: "주문하기",
         logoutAdmin: "⬅️ 로그아웃",
         clearOrders: "🗑️ 전체 내역 삭제",
@@ -98,6 +105,7 @@ const uiTexts = {
         addCartBtn: "➕ 장바구니 담기",
         totalText: "합계",
         emptyCart: "장바구니가 비어 있습니다!",
+        requireTable: "테이블 번호를 입력해 주세요!",
         orderSent: "주문이 완료되었습니다!"
     }
 };
@@ -237,9 +245,10 @@ function updateUITexts() {
     document.getElementById('ui-select-lang').innerText = t.selectLang;
     document.getElementById('ui-admin-login').innerText = t.adminLogin;
     document.getElementById('ui-back-lang').innerText = t.backLang;
-    document.getElementById('ui-cart-btn').innerHTML = `🛒 ${t.cartBtn} (<span id="cart-count">0</span>)`;
+    document.getElementById('ui-cart-btn').innerHTML = `🛒 ${t.cartBtn} (<span id="cart-count">${cart.reduce((sum, item) => sum + item.quantity, 0)}</span>)`;
     document.getElementById('ui-back-menu').innerText = t.backMenu;
     document.getElementById('ui-cart-title').innerText = t.cartTitle;
+    document.getElementById('ui-table-lbl').innerText = t.tableLbl;
     document.getElementById('ui-checkout-btn').innerText = t.checkoutBtn;
     document.getElementById('ui-logout-admin').innerText = t.logoutAdmin;
     document.getElementById('ui-clear-orders').innerText = t.clearOrders;
@@ -249,7 +258,6 @@ function updateUITexts() {
     document.getElementById('ui-manage-menu-title').innerText = t.manageMenuTitle;
     document.getElementById('ui-sales-chart-title').innerText = t.salesChartTitle;
     document.getElementById('ui-order-list-title').innerText = t.orderListTitle;
-    updateCartCount();
 }
 
 function backToLang() {
@@ -391,14 +399,22 @@ function showCart() {
     cartList.innerHTML += `<h3>${uiTexts[currentLang].totalText}: NT$ ${total}</h3>`;
 }
 
+// === 結帳：加入桌號檢查機制 ===
 function checkout() {
     if (cart.length === 0) {
         alert(uiTexts[currentLang].emptyCart);
         return;
     }
+
+    const tableNo = document.getElementById('table-number').value.trim();
+    if (!tableNo) {
+        alert(uiTexts[currentLang].requireTable);
+        return;
+    }
     
     const newOrder = {
         time: new Date().toLocaleString(),
+        table: tableNo, // 記錄桌號
         items: cart,
         total: cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
     };
@@ -409,6 +425,7 @@ function checkout() {
         alert(uiTexts[currentLang].orderSuccess);
         cart = []; 
         updateCartCount();
+        document.getElementById('table-number').value = ''; // 清空桌號
         document.getElementById('cart-screen').style.display = 'none';
         document.getElementById('lang-screen').style.display = 'block'; 
     }).catch(error => {
@@ -442,8 +459,10 @@ function renderAdminOrders() {
     }
     container.innerHTML = "";
     savedOrders.forEach((order, index) => {
+        // 如果該筆訂單有桌號就顯示出來
+        let tableText = order.table ? `<span style="color: #e63946; font-weight: bold; margin-left: 10px;">[桌號: ${order.table}]</span>` : '';
         let orderHTML = `<div class="order-card" style="position: relative;">
-            <h3>訂單編號 #${index + 1} <span>(${order.time})</span></h3>
+            <h3>訂單編號 #${index + 1} ${tableText} <span style="font-size: 14px; color: #666; margin-left: 10px;">(${order.time})</span></h3>
             <ul>`;
         order.items.forEach(item => {
             orderHTML += `<li>${item.name} x ${item.quantity} (NT$ ${item.price * item.quantity})</li>`;
@@ -571,7 +590,6 @@ function cancelEdit() {
     document.getElementById('ui-cancel-btn').style.display = "none";
 }
 
-// ⚠️ 【防卡死修改】刪除餐點只更新特定欄位或陣列
 function deleteMenuItem(index) {
     if (confirm("確定要刪除這道餐點嗎？")) {
         menuData.splice(index, 1);
@@ -583,14 +601,13 @@ function deleteMenuItem(index) {
     }
 }
 
-// === 5. 自動壓縮圖片，防止 Firebase 負載過大而儲存失敗 ===
 function compressAndSaveImage(file, callback) {
     const reader = new FileReader();
     reader.onload = function(e) {
         const img = new Image();
         img.onload = function() {
             const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 800; // 將圖片限制寬度
+            const MAX_WIDTH = 800;
             let scaleSize = 1;
             if (img.width > MAX_WIDTH) {
                 scaleSize = MAX_WIDTH / img.width;
@@ -600,7 +617,6 @@ function compressAndSaveImage(file, callback) {
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
             
-            // 壓縮成 80% 畫質的 JPEG (極大幅度減少體積)
             const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8); 
             callback(compressedDataUrl);
         }
@@ -609,7 +625,6 @@ function compressAndSaveImage(file, callback) {
     reader.readAsDataURL(file);
 }
 
-// ⚠️ 【防卡死修改】編輯時只送出「局部文字」，不重傳大照片
 function addNewItem() {
     const nameZh = document.getElementById('new-name-zh').value;
     const descZh = document.getElementById('new-desc-zh').value;
@@ -632,7 +647,6 @@ function addNewItem() {
         const index = menuData.findIndex(i => i.id === editingItemId);
         if (index === -1) return;
 
-        // 局部更新物件
         let updatePayload = {
             name_zh: nameZh, desc_zh: descZh,
             name_en: nameEn, desc_en: descEn,
@@ -650,7 +664,6 @@ function addNewItem() {
                 }).catch(err => alert("儲存失敗：" + err));
             });
         } else {
-            // 如果沒換照片，就只傳送更新的文字給資料庫 (超級省流量)
             db.ref(`restaurant_menu/${index}`).update(updatePayload).then(() => {
                 alert(`✅ 成功更新餐點：${nameZh}！`);
                 cancelEdit();

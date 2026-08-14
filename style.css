@@ -54,6 +54,29 @@ body {
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
+/* === 永遠固定在右下角的懸浮購物車按鈕 === */
+.floating-cart-btn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background-color: #e63946;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 15px 25px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 6px 12px rgba(230, 57, 70, 0.4);
+    z-index: 1000;
+    transition: all 0.3s ease;
+}
+
+.floating-cart-btn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 8px 16px rgba(230, 57, 70, 0.6);
+}
+
 /* 左右滑動分類列 */
 .category-scroll-container {
     display: flex;
@@ -212,6 +235,29 @@ body {
     font-size: 20px;
 }
 
+/* 桌號輸入區塊 */
+.table-input-container {
+    margin: 20px 0;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.table-input-container input {
+    padding: 10px;
+    font-size: 18px;
+    width: 120px;
+    border: 2px solid #ccc;
+    border-radius: 6px;
+    text-align: center;
+}
+
 /* 後台左右對照表單排版 */
 .admin-form-grid {
     display: grid;
@@ -364,5 +410,11 @@ ul {
     }
     .edit-btn, .delete-btn {
         flex: 1;
+    }
+    .floating-cart-btn {
+        bottom: 20px;
+        right: 20px;
+        font-size: 16px;
+        padding: 12px 20px;
     }
 }

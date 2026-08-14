@@ -7,10 +7,9 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    <!-- 引入 Firebase 核心、資料庫、儲存空間 (重要！新增了 storage) -->
+    <!-- Firebase 雲端連線工具 -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 </head>
 <body>
     <!-- 畫面一：選擇語系 -->
@@ -29,10 +28,15 @@
     <div id="menu-screen" class="screen" style="display: none;">
         <div class="header">
             <button id="ui-back-lang" onclick="backToLang()">⬅️ 返回語言選擇</button>
-            <button id="ui-cart-btn" onclick="showCart()">🛒 購物車 (<span id="cart-count">0</span>)</button>
         </div>
+        
+        <!-- 左右滑動分類列 -->
         <div class="category-scroll-container" id="category-scroll"></div>
+
         <div id="menu-container"></div>
+        
+        <!-- 永遠懸浮在右下角的購物車按鈕 -->
+        <button id="ui-cart-btn" class="floating-cart-btn" onclick="showCart()">🛒 購物車 (<span id="cart-count">0</span>)</button>
     </div>
 
     <!-- 畫面三：購物車畫面 -->
@@ -42,8 +46,15 @@
         </div>
         <h2 id="ui-cart-title">購物車 (訂單明細)</h2>
         <ul id="cart-list"></ul>
+        
+        <!-- 新增：桌號輸入區塊 -->
+        <div class="table-input-container">
+            <label id="ui-table-lbl">桌號：</label>
+            <input type="text" id="table-number" placeholder="例如：5">
+        </div>
+
         <div class="cart-actions">
-            <button id="ui-checkout-btn" onclick="checkout()" style="background: #e63946; color: white; font-size: 20px; padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer;">送出訂單</button>
+            <button id="ui-checkout-btn" onclick="checkout()" style="background: #e63946; color: white; font-size: 20px; padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; width: 100%;">送出訂單</button>
         </div>
     </div>
 
@@ -65,7 +76,7 @@
                         <input type="file" id="new-img" accept="image/*">
                     </div>
 
-                    <div class="form-full" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px;">
+                    <div class="form-full" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                         <div>
                             <label>2. 餐點分類:</label>
                             <select id="new-category">
@@ -82,9 +93,6 @@
                         <div>
                             <label>3. 價格 (NT$):</label>
                             <input type="number" id="new-price" min="0" placeholder="例如：150">
-                        </div>
-                        <div style="display: flex; align-items: flex-end; padding-bottom: 12px;">
-                            <button id="ui-translate-btn" onclick="aiTranslateAll()" style="background: #8e44ad; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight:bold; width:100%;">🤖 AI 一键翻译</button>
                         </div>
                     </div>
 
