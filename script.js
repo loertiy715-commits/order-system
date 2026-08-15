@@ -129,7 +129,7 @@ let editingItemId = null;
 let cart = []; 
 let salesChartInstance = null; 
 
-// === 1. 直接串接 Google Translate API ===
+// === Google Translate API ===
 async function translateWithGoogle(text, targetLang) {
     if (!text || text.trim() === "") return "";
     try {
@@ -151,7 +151,7 @@ async function translateWithGoogle(text, targetLang) {
     }
 }
 
-// === 2. 舊資料的備用翻譯 ===
+// === 舊資料的備用翻譯 ===
 function fallbackTranslate(text, lang) {
     if (!text || lang === 'zh') return text;
     const dict = {
@@ -165,7 +165,7 @@ function fallbackTranslate(text, lang) {
     return text;
 }
 
-// === 3. 後台「打字即時自動翻譯」防手震聯動 ===
+// === 後台「打字即時自動翻譯」防手震聯動 ===
 document.addEventListener("DOMContentLoaded", () => {
     const nameZhInput = document.getElementById('new-name-zh');
     const descZhInput = document.getElementById('new-desc-zh');
@@ -205,7 +205,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-// === 4. 資料庫讀取 ===
+// === 資料庫讀取 ===
 db.ref('restaurant_menu').on('value', (snapshot) => {
     let data = snapshot.val();
     if (data) {
@@ -272,8 +272,7 @@ function backToMenu() {
 
 function renderCategoryScroll() {
     const scrollContainer = document.getElementById('category-scroll');
-    scrollContainer.innerHTML = '';
-
+    let htmlContent = '';
     const categories = ["all", "涼拌", "生鮮", "燒烤", "熱炒", "火鍋", "蒜酥", "三杯煲仔", "鐵板"];
     
     categories.forEach(cat => {
@@ -283,17 +282,17 @@ function renderCategoryScroll() {
         } else {
             displayName = categoriesMap[cat] ? categoriesMap[cat][currentLang] : cat;
         }
-
-        let tab = document.createElement('button');
-        tab.className = `category-tab ${currentCategory === cat ? 'active' : ''}`;
-        tab.innerText = displayName;
-        tab.onclick = () => {
-            currentCategory = cat;
-            renderCategoryScroll();
-            renderFilteredMenu();
-        };
-        scrollContainer.appendChild(tab);
+        
+        let activeClass = currentCategory === cat ? 'active' : '';
+        htmlContent += `<button class="category-tab ${activeClass}" onclick="switchCategory('${cat}')">${displayName}</button>`;
     });
+    scrollContainer.innerHTML = htmlContent;
+}
+
+window.switchCategory = function(cat) {
+    currentCategory = cat;
+    renderCategoryScroll();
+    renderFilteredMenu();
 }
 
 function renderMenu() {
@@ -303,9 +302,8 @@ function renderMenu() {
 
 function renderFilteredMenu() {
     const container = document.getElementById('menu-container');
-    container.innerHTML = ''; 
-
     let filteredItems = menuData;
+    
     if (currentCategory !== 'all') {
         filteredItems = menuData.filter(item => item.category === currentCategory);
     }
@@ -315,6 +313,8 @@ function renderFilteredMenu() {
         return;
     }
 
+    let finalHTML = ''; 
+    
     filteredItems.forEach(item => {
         let dbName = item[`name_${currentLang}`];
         let primaryName = (currentLang === 'zh') ? item.name_zh : 
@@ -326,7 +326,7 @@ function renderFilteredMenu() {
                           ((dbDesc && dbDesc.trim() !== "" && dbDesc !== item.desc_zh) ? dbDesc : fallbackTranslate(item.desc_zh, currentLang));
         let secondaryDesc = (currentLang !== 'zh') ? `(${item.desc_zh})` : '';
 
-        let menuItemHTML = `
+        finalHTML += `
             <div class="menu-item">
                 <img src="${item.image_url}" alt="${primaryName}">
                 <div class="menu-info">
@@ -344,11 +344,12 @@ function renderFilteredMenu() {
                 </div>
             </div>
         `;
-        container.innerHTML += menuItemHTML;
     });
+    
+    container.innerHTML = finalHTML;
 }
 
-function addToCart(itemId) {
+window.addToCart = function(itemId) {
     const qtyInput = document.getElementById(`qty-${itemId}`);
     const quantity = parseInt(qtyInput.value);
 
@@ -382,25 +383,25 @@ function updateCartCount() {
     if (countSpan) countSpan.innerText = totalItems;
 }
 
-function showCart() {
+window.showCart = function() {
     document.getElementById('menu-screen').style.display = 'none';
     document.getElementById('cart-screen').style.display = 'block';
     
     const cartList = document.getElementById('cart-list');
-    cartList.innerHTML = ''; 
+    let cartHTML = '';
 
     let total = 0;
     cart.forEach(cartItem => {
         let subtotal = cartItem.price * cartItem.quantity;
-        cartList.innerHTML += `<li>${cartItem.name} x ${cartItem.quantity}份 - NT$ ${subtotal}</li>`;
+        cartHTML += `<li>${cartItem.name} x ${cartItem.quantity}份 - NT$ ${subtotal}</li>`;
         total += subtotal;
     });
     
-    cartList.innerHTML += `<h3>${uiTexts[currentLang].totalText}: NT$ ${total}</h3>`;
+    cartHTML += `<h3>${uiTexts[currentLang].totalText}: NT$ ${total}</h3>`;
+    cartList.innerHTML = cartHTML;
 }
 
-// === 結帳：加入桌號檢查機制 ===
-function checkout() {
+window.checkout = function() {
     if (cart.length === 0) {
         alert(uiTexts[currentLang].emptyCart);
         return;
@@ -414,7 +415,7 @@ function checkout() {
     
     const newOrder = {
         time: new Date().toLocaleString(),
-        table: tableNo, // 記錄桌號
+        table: tableNo, 
         items: cart,
         total: cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
     };
@@ -425,7 +426,7 @@ function checkout() {
         alert(uiTexts[currentLang].orderSuccess);
         cart = []; 
         updateCartCount();
-        document.getElementById('table-number').value = ''; // 清空桌號
+        document.getElementById('table-number').value = ''; 
         document.getElementById('cart-screen').style.display = 'none';
         document.getElementById('lang-screen').style.display = 'block'; 
     }).catch(error => {
@@ -433,7 +434,7 @@ function checkout() {
     });
 }
 
-function adminLogin() {
+window.adminLogin = function() {
     const password = prompt("請輸入管理員密碼：");
     if (password === "0905852418") {
         document.getElementById('lang-screen').style.display = 'none';
@@ -446,7 +447,7 @@ function adminLogin() {
     }
 }
 
-function logoutAdmin() {
+window.logoutAdmin = function() {
     document.getElementById('admin-screen').style.display = 'none';
     document.getElementById('lang-screen').style.display = 'block';
 }
@@ -457,9 +458,9 @@ function renderAdminOrders() {
         container.innerHTML = "<p>目前沒有任何訂單紀錄。</p>";
         return;
     }
-    container.innerHTML = "";
+    
+    let htmlContent = '';
     savedOrders.forEach((order, index) => {
-        // 如果該筆訂單有桌號就顯示出來
         let tableText = order.table ? `<span style="color: #e63946; font-weight: bold; margin-left: 10px;">[桌號: ${order.table}]</span>` : '';
         let orderHTML = `<div class="order-card" style="position: relative;">
             <h3>訂單編號 #${index + 1} ${tableText} <span style="font-size: 14px; color: #666; margin-left: 10px;">(${order.time})</span></h3>
@@ -471,11 +472,12 @@ function renderAdminOrders() {
             <h4>總計金額: NT$ ${order.total}</h4>
             <button onclick="deleteOrder(${index})" class="delete-btn" style="margin-top: 10px;">🗑️ 刪除此筆訂單</button>
         </div>`;
-        container.innerHTML += orderHTML;
+        htmlContent += orderHTML;
     });
+    container.innerHTML = htmlContent;
 }
 
-function deleteOrder(index) {
+window.deleteOrder = function(index) {
     if (confirm(`確定要刪除「訂單編號 #${index + 1}」嗎？`)) {
         savedOrders.splice(index, 1);
         db.ref('restaurant_orders').set(savedOrders).then(() => {
@@ -516,7 +518,7 @@ function renderSalesChart() {
     });
 }
 
-function clearOrders() {
+window.clearOrders = function() {
     if (confirm("⚠️ 確定要清空所有的歷史訂單嗎？")) {
         db.ref('restaurant_orders').remove().then(() => {
             alert("歷史訂單已清空！");
@@ -526,13 +528,14 @@ function clearOrders() {
 
 function renderAdminMenu() {
     const container = document.getElementById('admin-menu-list');
-    container.innerHTML = '';
     if (menuData.length === 0) {
         container.innerHTML = "<p>目前沒有任何餐點。</p>";
         return;
     }
+    
+    let htmlContent = '';
     menuData.forEach((item, index) => {
-        let html = `
+        htmlContent += `
             <div class="admin-menu-item">
                 <span>[${item.category || '未分類'}] ${item.name_zh} (NT$ ${item.price})</span>
                 <div class="admin-menu-actions">
@@ -541,11 +544,11 @@ function renderAdminMenu() {
                 </div>
             </div>
         `;
-        container.innerHTML += html;
     });
+    container.innerHTML = htmlContent;
 }
 
-function editMenuItem(itemId) {
+window.editMenuItem = function(itemId) {
     const item = menuData.find(i => i.id === itemId);
     if (!item) return;
 
@@ -570,7 +573,7 @@ function editMenuItem(itemId) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function cancelEdit() {
+window.cancelEdit = function() {
     editingItemId = null;
     document.getElementById('new-name-zh').value = '';
     document.getElementById('new-desc-zh').value = '';
@@ -590,7 +593,7 @@ function cancelEdit() {
     document.getElementById('ui-cancel-btn').style.display = "none";
 }
 
-function deleteMenuItem(index) {
+window.deleteMenuItem = function(index) {
     if (confirm("確定要刪除這道餐點嗎？")) {
         menuData.splice(index, 1);
         db.ref('restaurant_menu').set(menuData).then(() => {
@@ -598,6 +601,56 @@ function deleteMenuItem(index) {
         }).catch(err => {
             alert("刪除失敗：" + err);
         });
+    }
+}
+
+// === 🚀 終極殺手鐧：一鍵壓縮所有舊照片 (解決卡頓) ===
+window.compressAllOldImages = async function() {
+    if (!confirm("⚠️ 這會自動將所有舊的大圖片壓縮，大幅提升網頁載入速度。這需要幾秒鐘的時間，確定要執行嗎？")) return;
+
+    const btn = document.getElementById('compress-btn');
+    btn.innerText = "🔄 壓縮中，請稍候...";
+    btn.disabled = true;
+
+    try {
+        const compressPromise = (item) => {
+            return new Promise((resolve) => {
+                if (!item.image_url || !item.image_url.startsWith('data:image') || item.image_url.length < 100000) {
+                    resolve(item);
+                    return;
+                }
+
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 500; 
+                    let scaleSize = 1;
+                    if (img.width > MAX_WIDTH) {
+                        scaleSize = MAX_WIDTH / img.width;
+                    }
+                    canvas.width = img.width * scaleSize;
+                    canvas.height = img.height * scaleSize;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    
+                    item.image_url = canvas.toDataURL('image/jpeg', 0.6); 
+                    resolve(item);
+                };
+                img.onerror = () => resolve(item); 
+                img.src = item.image_url;
+            });
+        };
+
+        const updatedMenu = await Promise.all(menuData.map(item => compressPromise(item)));
+        
+        await db.ref('restaurant_menu').set(updatedMenu);
+        alert("✅ 所有舊照片已成功壓縮！現在網頁載入速度應該會飛快了！");
+        
+    } catch (err) {
+        alert("壓縮失敗：" + err);
+    } finally {
+        btn.innerText = "🚀 一鍵壓縮所有舊照片 (解決卡頓)";
+        btn.disabled = false;
     }
 }
 
@@ -625,7 +678,7 @@ function compressAndSaveImage(file, callback) {
     reader.readAsDataURL(file);
 }
 
-function addNewItem() {
+window.addNewItem = function() {
     const nameZh = document.getElementById('new-name-zh').value;
     const descZh = document.getElementById('new-desc-zh').value;
     const nameEn = document.getElementById('new-name-en').value;

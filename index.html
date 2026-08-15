@@ -141,8 +141,12 @@
             </div>
         </div>
 
+        <!-- 🚀 新增：一鍵壓縮舊照片區塊 -->
         <div class="admin-section">
-            <h3 id="ui-manage-menu-title">📝 管理現有菜單 (編輯與刪除)</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f1f1; padding-bottom: 12px; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                <h3 id="ui-manage-menu-title" style="border: none; padding: 0; margin: 0;">📝 管理現有菜單 (編輯與刪除)</h3>
+                <button id="compress-btn" onclick="compressAllOldImages()" style="background: #ff9800; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">🚀 一鍵壓縮所有舊照片 (解決卡頓)</button>
+            </div>
             <div id="admin-menu-list"></div>
         </div>
 
