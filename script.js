@@ -27,7 +27,7 @@ const uiTexts = {
         addMenuTitle: "➕ 新增 / 編輯餐點",
         manageMenuTitle: "📝 管理現有菜單 (編輯與刪除)",
         salesChartTitle: "📊 銷售數量統計",
-        orderListTitle: "📝 進行中訂單 (未結帳)",
+        orderListTitle: "📝 進行中訂單 (收銀與加點)",
         allCategory: "全部餐點",
         qtyText: "數量:",
         addCartBtn: "➕ 加入購物車",
@@ -123,13 +123,29 @@ const categoriesMap = {
 
 let menuData = [];
 let savedOrders = [];
-let ledgerData = []; // 歷史帳本資料
+let ledgerData = []; 
 let currentLang = 'zh'; 
 let currentCategory = 'all';
 let editingItemId = null; 
 let cart = []; 
 let salesChartInstance = null; 
 
+// === 核心運算：處理 110 元特別酒類「3瓶200」的促銷邏輯 ===
+window.calculateItemSubtotal = function(item) {
+    // 判斷是否為促銷酒類
+    if (item.name.includes("特別酒類") && item.price === 110) {
+        let promoSets = Math.floor(item.quantity / 3); // 幾組3瓶
+        let remainder = item.quantity % 3;             // 剩下幾瓶
+        return (promoSets * 200) + (remainder * 110);
+    }
+    return item.price * item.quantity;
+};
+
+window.calculateOrderTotal = function(items) {
+    return items.reduce((sum, item) => sum + window.calculateItemSubtotal(item), 0);
+};
+
+// === Google Translate API ===
 async function translateWithGoogle(text, targetLang) {
     if (!text || text.trim() === "") return "";
     try {
@@ -163,6 +179,7 @@ function fallbackTranslate(text, lang) {
     return text;
 }
 
+// === 後台自動翻譯 ===
 document.addEventListener("DOMContentLoaded", () => {
     const nameZhInput = document.getElementById('new-name-zh');
     const descZhInput = document.getElementById('new-desc-zh');
@@ -209,7 +226,6 @@ db.ref('restaurant_menu').on('value', (snapshot) => {
     } else {
         menuData = [];
     }
-    
     if (document.getElementById('menu-screen').style.display === 'block') {
         renderMenu();
     }
@@ -218,7 +234,6 @@ db.ref('restaurant_menu').on('value', (snapshot) => {
     }
 });
 
-// 讀取未結帳訂單
 db.ref('restaurant_orders').on('value', (snapshot) => {
     let data = snapshot.val();
     savedOrders = data ? (Array.isArray(data) ? data : Object.values(data)) : [];
@@ -227,13 +242,12 @@ db.ref('restaurant_orders').on('value', (snapshot) => {
     }
 });
 
-// 讀取已結帳歷史帳本
 db.ref('restaurant_ledger').on('value', (snapshot) => {
     let data = snapshot.val();
     ledgerData = data ? (Array.isArray(data) ? data : Object.values(data)) : [];
     if (document.getElementById('admin-screen').style.display === 'block') {
         renderLedger();
-        renderSalesChart(); // 讓圖表以「已結帳」的資料為主
+        renderSalesChart(); 
     }
 });
 
@@ -288,7 +302,6 @@ function renderCategoryScroll() {
         } else {
             displayName = categoriesMap[cat] ? categoriesMap[cat][currentLang] : cat;
         }
-        
         let activeClass = currentCategory === cat ? 'active' : '';
         htmlContent += `<button class="category-tab ${activeClass}" onclick="switchCategory('${cat}')">${displayName}</button>`;
     });
@@ -396,11 +409,13 @@ window.showCart = function() {
     const cartList = document.getElementById('cart-list');
     let cartHTML = '';
 
-    let total = 0;
+    let total = calculateOrderTotal(cart);
+
     cart.forEach(cartItem => {
-        let subtotal = cartItem.price * cartItem.quantity;
-        cartHTML += `<li>${cartItem.name} x ${cartItem.quantity}份 - NT$ ${subtotal}</li>`;
-        total += subtotal;
+        let subtotal = calculateItemSubtotal(cartItem);
+        let promoText = (cartItem.name.includes("特別酒類") && cartItem.price === 110 && cartItem.quantity >= 3) 
+            ? `<span style="color:#e63946; font-size:14px; margin-left:5px;">(套用3瓶200優惠)</span>` : '';
+        cartHTML += `<li>${cartItem.name} x ${cartItem.quantity}份 - NT$ ${subtotal} ${promoText}</li>`;
     });
     
     cartHTML += `<h3>${uiTexts[currentLang].totalText}: NT$ ${total}</h3>`;
@@ -423,7 +438,7 @@ window.checkout = function() {
         time: new Date().toLocaleString(),
         table: tableNo, 
         items: cart,
-        total: cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
+        total: calculateOrderTotal(cart)
     };
     
     const updatedOrders = [...savedOrders, newOrder];
@@ -459,6 +474,7 @@ window.logoutAdmin = function() {
     document.getElementById('lang-screen').style.display = 'block';
 }
 
+// === 渲染進行中訂單 (包含收銀機與加點功能) ===
 function renderAdminOrders() {
     const container = document.getElementById('admin-orders');
     if (savedOrders.length === 0) {
@@ -468,33 +484,178 @@ function renderAdminOrders() {
     
     let htmlContent = '';
     savedOrders.forEach((order, index) => {
+        // 確保總額重新計算 (因為可能被加點)
+        order.total = calculateOrderTotal(order.items);
+        
         let tableText = order.table ? `<span style="color: #e63946; font-weight: bold; margin-left: 10px;">[桌號: ${order.table}]</span>` : '';
+        
         let orderHTML = `<div class="order-card" style="position: relative;">
             <h3>訂單編號 #${index + 1} ${tableText} <span style="font-size: 14px; color: #666; margin-left: 10px;">(${order.time})</span></h3>
             <ul>`;
-        order.items.forEach(item => {
-            orderHTML += `<li>${item.name} x ${item.quantity} (NT$ ${item.price * item.quantity})</li>`;
+            
+        order.items.forEach((item, itemIdx) => {
+            let subtotal = calculateItemSubtotal(item);
+            let promoText = (item.name.includes("特別酒類") && item.price === 110 && item.quantity >= 3) 
+                ? `<span style="color:#e63946; font-size:12px; margin-left:5px;">(套用3瓶200優惠)</span>` : '';
+                
+            orderHTML += `<li>
+                ${item.name} x ${item.quantity} (NT$ ${subtotal}) ${promoText}
+                <button onclick="removeOrderItem(${index}, ${itemIdx})" class="remove-item-btn">刪除</button>
+            </li>`;
         });
+        
         orderHTML += `</ul>
-            <h4>總計金額: NT$ ${order.total}</h4>
-            <div style="margin-top: 10px; display: flex;">
-                <button onclick="completeOrder(${index})" class="pay-btn">💰 確認結帳</button>
-                <button onclick="deleteOrder(${index})" class="delete-btn">🗑️ 取消訂單</button>
+            
+            <!-- 臨時加點面板 (預設隱藏) -->
+            <div id="quick-add-${index}" class="quick-add-panel" style="display:none;">
+                <h4 style="margin-top:0; color:#b7791f;">⚡ 臨時加點 (海鮮/酒水)</h4>
+                
+                <div style="margin-bottom:10px;">
+                    <select id="fish-type-${index}">
+                        <option value="烤海魚">🐟 烤海魚</option>
+                        <option value="清蒸海魚">🐟 清蒸海魚</option>
+                    </select>
+                    $ <input type="number" id="fish-price-${index}" placeholder="輸入時價" style="width:90px;">
+                    數量: <input type="number" id="fish-qty-${index}" value="1" min="1" style="width:60px;">
+                    <button class="quick-add-btn" onclick="addFishToOrder(${index})">加入訂單</button>
+                </div>
+                
+                <div>
+                    <select id="bev-type-${index}">
+                        <option value="50" data-name="飲料/啤酒 ($50)">🥤 飲料/啤酒 ($50)</option>
+                        <option value="90" data-name="一般啤酒 ($90)">🍺 一般啤酒 ($90)</option>
+                        <option value="110" data-name="特別酒類 (促銷3瓶200)">🍾 特別酒類 ($110 / 促銷3瓶200)</option>
+                        <option value="250" data-name="高級酒類 ($250)">🍷 高級酒類 ($250)</option>
+                    </select>
+                    數量: <input type="number" id="bev-qty-${index}" value="1" min="1" style="width:60px;">
+                    <button class="quick-add-btn" onclick="addBevToOrder(${index})">加入訂單</button>
+                </div>
             </div>
+
+            <!-- 收銀機區塊 -->
+            <div class="cashier-section">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap:10px;">
+                    <span style="font-size:20px; font-weight:bold;">應收: <span style="color:#e63946;">NT$ ${order.total}</span></span>
+                    <div style="font-size:18px;">
+                        實收: $ <input type="number" id="cash-received-${index}" oninput="calcChange(${index}, ${order.total})" style="width:100px; font-size:18px; padding:5px; border:2px solid #ccc; border-radius:4px; text-align:center;">
+                    </div>
+                    <span style="font-size:20px; font-weight:bold; color:#2f855a;">找零: <span id="change-display-${index}">NT$ 0</span></span>
+                </div>
+                
+                <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button onclick="toggleQuickAdd(${index})" style="background:#d69e2e; color:white; border:none; padding:10px 15px; border-radius:6px; font-weight:bold; cursor:pointer;">➕ 臨時加點</button>
+                    <button onclick="completeOrder(${index})" class="pay-btn" style="flex:1;">💰 確認結帳並印入帳本</button>
+                    <button onclick="deleteOrder(${index})" class="delete-btn" style="padding:10px 15px;">🗑️ 取消訂單</button>
+                </div>
+            </div>
+            
         </div>`;
         htmlContent += orderHTML;
     });
     container.innerHTML = htmlContent;
 }
 
+// === 收銀機找零計算 ===
+window.calcChange = function(index, total) {
+    const received = parseInt(document.getElementById(`cash-received-${index}`).value);
+    const changeDisplay = document.getElementById(`change-display-${index}`);
+    
+    if (isNaN(received)) {
+        changeDisplay.innerText = "NT$ 0";
+        changeDisplay.style.color = "#2f855a";
+    } else {
+        const change = received - total;
+        if (change < 0) {
+            changeDisplay.innerText = `少 NT$ ${Math.abs(change)}`;
+            changeDisplay.style.color = "#e53e3e";
+        } else {
+            changeDisplay.innerText = `NT$ ${change}`;
+            changeDisplay.style.color = "#2f855a";
+        }
+    }
+}
+
+// === 切換顯示加點面板 ===
+window.toggleQuickAdd = function(index) {
+    const panel = document.getElementById(`quick-add-${index}`);
+    if (panel.style.display === "none") {
+        panel.style.display = "block";
+    } else {
+        panel.style.display = "none";
+    }
+}
+
+// === 臨時加點：海魚 (自訂金額) ===
+window.addFishToOrder = function(orderIndex) {
+    const type = document.getElementById(`fish-type-${orderIndex}`).value;
+    const price = parseInt(document.getElementById(`fish-price-${orderIndex}`).value);
+    const qty = parseInt(document.getElementById(`fish-qty-${orderIndex}`).value);
+
+    if (isNaN(price) || price <= 0) return alert("請輸入正確的時價金額！");
+    if (isNaN(qty) || qty <= 0) return alert("數量錯誤！");
+
+    let order = savedOrders[orderIndex];
+    order.items.push({ id: "FISH_"+Date.now(), name: type, price: price, quantity: qty });
+    
+    // 更新資料庫
+    db.ref('restaurant_orders').set(savedOrders);
+}
+
+// === 臨時加點：酒水飲料 ===
+window.addBevToOrder = function(orderIndex) {
+    const select = document.getElementById(`bev-type-${orderIndex}`);
+    const price = parseInt(select.value);
+    const name = select.options[select.selectedIndex].getAttribute('data-name');
+    const qty = parseInt(document.getElementById(`bev-qty-${orderIndex}`).value);
+
+    if (isNaN(qty) || qty <= 0) return alert("數量錯誤！");
+
+    let order = savedOrders[orderIndex];
+    
+    // 檢查是否已經有點過相同的酒水，有就合併數量 (這樣 3瓶200 才能正確跨次計算)
+    let existingItem = order.items.find(i => i.name === name && i.price === price);
+    if (existingItem) {
+        existingItem.quantity += qty;
+    } else {
+        order.items.push({ id: "BEV_"+Date.now(), name: name, price: price, quantity: qty });
+    }
+
+    db.ref('restaurant_orders').set(savedOrders);
+}
+
+// === 刪除訂單內單一品項 ===
+window.removeOrderItem = function(orderIndex, itemIndex) {
+    if (confirm("確定要刪除這個餐點嗎？")) {
+        savedOrders[orderIndex].items.splice(itemIndex, 1);
+        // 如果刪光了就整筆訂單取消
+        if (savedOrders[orderIndex].items.length === 0) {
+            savedOrders.splice(orderIndex, 1);
+        }
+        db.ref('restaurant_orders').set(savedOrders);
+    }
+}
+
 // === 結帳：轉移至帳本 ===
 window.completeOrder = function(index) {
-    if (confirm("確認這筆訂單已結帳，並記入歷史帳本嗎？")) {
-        const orderToMove = savedOrders[index];
-        orderToMove.paidTime = new Date().toLocaleString(); // 記錄結帳時間
+    // 再次確認結帳金額是否正確 (防呆)
+    const orderToMove = savedOrders[index];
+    orderToMove.total = calculateOrderTotal(orderToMove.items);
+    
+    const receivedInput = document.getElementById(`cash-received-${index}`);
+    if (receivedInput && receivedInput.value) {
+        const received = parseInt(receivedInput.value);
+        if (received < orderToMove.total) {
+            alert("⚠️ 實收金額不足，請確認後再結帳！");
+            return;
+        }
+    }
+
+    if (confirm(`確認結帳總金額 NT$ ${orderToMove.total}，並記入歷史帳本嗎？`)) {
+        orderToMove.paidTime = new Date().toLocaleString(); 
         
         savedOrders.splice(index, 1);
         
+        // 刪除未結帳，並推進帳本
         db.ref('restaurant_orders').set(savedOrders).then(() => {
             db.ref('restaurant_ledger').push(orderToMove);
             alert("✅ 結帳成功！已寫入帳本。");
@@ -511,7 +672,6 @@ window.deleteOrder = function(index) {
     }
 }
 
-// === 渲染帳本與營業額 ===
 function renderLedger() {
     const container = document.getElementById('admin-ledger');
     let totalRevenue = 0;
@@ -539,11 +699,9 @@ function renderLedger() {
     });
 
     container.innerHTML = htmlContent;
-    // 更新營業額顯示
     document.getElementById('total-revenue').innerText = totalRevenue.toLocaleString();
 }
 
-// === 清空相關按鈕 ===
 window.clearOrders = function() {
     if (confirm("⚠️ 確定要清空所有的「未結帳」訂單嗎？")) {
         db.ref('restaurant_orders').remove().then(() => alert("未結帳訂單已清空！"));
@@ -559,7 +717,6 @@ window.clearLedger = function() {
     }
 }
 
-// === 銷售圖表：改為統計「已結帳 (帳本)」的數量 ===
 function renderSalesChart() {
     let salesData = {}; 
     ledgerData.forEach(order => {
@@ -579,7 +736,7 @@ function renderSalesChart() {
         data: {
             labels: labels,
             datasets: [{
-                label: '總銷售數量 (已結帳)',
+                label: '總銷售數量 (依已結帳計算)',
                 data: data,
                 backgroundColor: 'rgba(56, 161, 105, 0.6)',
                 borderColor: 'rgba(56, 161, 105, 1)',
