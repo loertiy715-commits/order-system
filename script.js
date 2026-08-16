@@ -532,11 +532,11 @@ function renderAdminOrders() {
                 </div>
                 
                 <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px;">
-                    <!-- 補上 100元 飲料選項 -->
                     <select id="bev-type-${index}" class="input-clean" style="width: auto; max-width: 250px;">
                         <option value="50" data-name="飲料/啤酒 ($50)">🥤 飲料/啤酒 ($50)</option>
                         <option value="90" data-name="一般啤酒 ($90)">🍺 一般啤酒 ($90)</option>
                         <option value="100" data-name="飲料 ($100)">🍹 飲料 ($100)</option>
+                        <option value="110" data-name="啤酒 ($110)">🍺 啤酒 ($110)</option>
                         <option value="110" data-name="特別酒類 (促銷3瓶200)">🍾 特別酒類 ($110 / 3瓶200)</option>
                         <option value="250" data-name="高級酒類 ($250)">🍷 高級酒類 ($250)</option>
                     </select>
