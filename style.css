@@ -350,65 +350,125 @@ body {
     font-size: 15px;
 }
 
+/* === 全新升級：POS 收銀明細排版 === */
+.order-card {
+    background: white;
+    border-top: 5px solid #3182ce;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+.order-item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid #edf2f7;
+}
+
+.order-item-row:last-child {
+    border-bottom: none;
+}
+
+.order-item-name {
+    font-size: 17px;
+    color: #2d3748;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+}
+
+.qty-badge {
+    display: inline-block;
+    width: 32px;
+    font-weight: bold;
+    color: #2b6cb0;
+}
+
+.order-item-price-col {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.item-price-tag {
+    font-size: 17px;
+    font-weight: bold;
+    color: #e53e3e;
+    min-width: 80px;
+    text-align: right;
+}
+
+.del-btn-small {
+    background: #fc8181;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.del-btn-small:hover {
+    background: #e53e3e;
+}
+
+.cashier-section {
+    background: #f0fdf4;
+    padding: 20px;
+    margin-top: 20px;
+    border-radius: 8px;
+    border: 1px solid #9ae6b4;
+}
+
+.quick-add-panel {
+    background: #fffaf0;
+    border: 1px dashed #ecc94b;
+    padding: 15px;
+    margin-top: 15px;
+    border-radius: 8px;
+}
+
+.input-clean {
+    padding: 8px;
+    border: 1px solid #cbd5e0;
+    border-radius: 6px;
+    font-size: 15px;
+    outline: none;
+    margin-right: 5px;
+}
+
+.input-clean:focus {
+    border-color: #3182ce;
+}
+
+.quick-add-btn {
+    background: #d69e2e;
+    color: white;
+    border: none;
+    padding: 9px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
 .pay-btn {
     background: #38a169;
     color: white;
     border: none;
-    padding: 10px 16px;
+    padding: 12px 20px;
     border-radius: 6px;
     cursor: pointer;
     font-size: 16px;
     font-weight: bold;
+    transition: 0.2s;
 }
 
 .pay-btn:hover {
     background: #2f855a;
-}
-
-/* === 新增：收銀台與加點面板樣式 === */
-.cashier-section {
-    background: #e6fffa;
-    padding: 15px;
-    margin-top: 15px;
-    border-radius: 8px;
-    border: 2px solid #38a169;
-}
-
-.quick-add-panel {
-    background: #fffbeb;
-    border: 1px dashed #d69e2e;
-    padding: 15px;
-    margin-top: 15px;
-    border-radius: 8px;
-}
-
-.quick-add-panel select, .quick-add-panel input {
-    padding: 6px;
-    font-size: 15px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    margin-right: 5px;
-}
-
-.quick-add-btn {
-    background: #3182ce;
-    color: white;
-    border: none;
-    padding: 8px 15px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-.remove-item-btn {
-    background: #e53e3e;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 4px 8px;
-    font-size: 12px;
-    cursor: pointer;
-    margin-left: 10px;
 }
 
 .chart-container {
@@ -420,14 +480,6 @@ body {
 ul {
     font-size: 18px;
     line-height: 1.8;
-}
-
-.order-card {
-    background: #f8f9fa;
-    border-left: 5px solid #3182ce;
-    padding: 18px;
-    margin-bottom: 15px;
-    border-radius: 0 8px 8px 0;
 }
 
 @media (max-width: 768px) {
@@ -464,7 +516,7 @@ ul {
         width: 100%;
         display: flex;
     }
-    .edit-btn, .delete-btn {
+    .edit-btn, .delete-btn, .pay-btn {
         flex: 1;
     }
     .floating-cart-btn {
@@ -472,5 +524,14 @@ ul {
         right: 20px;
         font-size: 16px;
         padding: 12px 20px;
+    }
+    .order-item-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .order-item-price-col {
+        width: 100%;
+        justify-content: space-between;
     }
 }
