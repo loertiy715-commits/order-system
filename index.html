@@ -30,12 +30,10 @@
             <button id="ui-back-lang" onclick="backToLang()">⬅️ 返回語言選擇</button>
         </div>
         
-        <!-- 左右滑動分類列 -->
         <div class="category-scroll-container" id="category-scroll"></div>
 
         <div id="menu-container"></div>
         
-        <!-- 永遠懸浮在右下角的購物車按鈕 -->
         <button id="ui-cart-btn" class="floating-cart-btn" onclick="showCart()">🛒 購物車 (<span id="cart-count">0</span>)</button>
     </div>
 
@@ -47,7 +45,6 @@
         <h2 id="ui-cart-title">購物車 (訂單明細)</h2>
         <ul id="cart-list"></ul>
         
-        <!-- 新增：桌號輸入區塊 -->
         <div class="table-input-container">
             <label id="ui-table-lbl">桌號：</label>
             <input type="text" id="table-number" placeholder="例如：5">
@@ -62,15 +59,39 @@
     <div id="admin-screen" class="screen" style="display: none;">
         <div class="header">
             <button id="ui-logout-admin" onclick="logoutAdmin()">⬅️ 登出並返回首頁</button>
-            <button id="ui-clear-orders" onclick="clearOrders()" style="background: #e53e3e; color: white;">🗑️ 清空所有歷史訂單</button>
+            <button id="ui-clear-orders" onclick="clearOrders()" style="background: #e53e3e; color: white;">🗑️ 清空未結帳訂單</button>
         </div>
         <h2 id="ui-admin-title">管理員後台</h2>
         
+        <!-- 進行中訂單 (收銀區) -->
+        <div class="admin-section">
+            <h3 id="ui-order-list-title">📝 進行中訂單 (未結帳)</h3>
+            <div id="admin-orders"></div>
+        </div>
+
+        <!-- 新增：歷史帳本與營業額區塊 -->
+        <div class="admin-section" style="background: #f0fdf4; border: 1px solid #c6f6d5;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #c6f6d5; padding-bottom: 12px; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                <h3 style="border: none; padding: 0; margin: 0; color: #22543d;">📔 歷史帳本 (已結帳)</h3>
+                <button onclick="clearLedger()" style="background: #e53e3e; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 14px;">🗑️ 清空帳本</button>
+            </div>
+            <h4 style="color: #276749; font-size: 24px; margin-top: 0;">💵 總營業額：NT$ <span id="total-revenue">0</span></h4>
+            <div id="admin-ledger"></div>
+        </div>
+
+        <!-- 銷售統計 (改為統計已結帳) -->
+        <div class="admin-section">
+            <h3 id="ui-sales-chart-title">📊 銷售數量統計 (依已結帳計算)</h3>
+            <div class="chart-container">
+                <canvas id="salesChart"></canvas>
+            </div>
+        </div>
+
+        <!-- 餐點管理 -->
         <div class="admin-section">
             <h3 id="ui-add-menu-title">➕ 新增 / 編輯餐點</h3>
             <div class="add-item-form">
                 <div class="admin-form-grid">
-                    <!-- 基本設定 -->
                     <div class="form-full">
                         <label>1. 餐點圖片 (上傳):</label>
                         <input type="file" id="new-img" accept="image/*">
@@ -96,7 +117,6 @@
                         </div>
                     </div>
 
-                    <!-- 左欄：中文設定 (基準) -->
                     <div class="lang-column" style="border-left: 4px solid #2b6cb0;">
                         <h4 style="color: #2b6cb0;">🇹🇼 中文設定 (基準)</h4>
                         <label>餐點名稱 (中文):</label>
@@ -105,7 +125,6 @@
                         <input type="text" id="new-desc-zh" placeholder="例如：特製醬料現炒">
                     </div>
 
-                    <!-- 右欄：英文設定 -->
                     <div class="lang-column" style="border-left: 4px solid #2f855a;">
                         <h4 style="color: #2f855a;">🇺🇸 英文設定</h4>
                         <label>Dish Name (English):</label>
@@ -114,7 +133,6 @@
                         <input type="text" id="new-desc-en" placeholder="Tender pork...">
                     </div>
 
-                    <!-- 左欄：日文設定 -->
                     <div class="lang-column" style="border-left: 4px solid #c53030;">
                         <h4 style="color: #c53030;">🇯🇵 日文設定</h4>
                         <label>料理名 (日本語):</label>
@@ -123,7 +141,6 @@
                         <input type="text" id="new-desc-jp" placeholder="特製ソース...">
                     </div>
 
-                    <!-- 右欄：韓文設定 -->
                     <div class="lang-column" style="border-left: 4px solid #d69e2e;">
                         <h4 style="color: #d69e2e;">🇰🇷 韓文設定</h4>
                         <label>음식 이름 (한국어):</label>
@@ -133,7 +150,6 @@
                     </div>
                 </div>
 
-                <!-- 儲存與取消按鈕 -->
                 <div style="display: flex; gap: 15px; margin-top: 25px; max-width: 500px;">
                     <button id="ui-save-btn" onclick="addNewItem()" class="save-btn" style="flex: 1;">儲存新餐點</button>
                     <button id="ui-cancel-btn" onclick="cancelEdit()" style="display: none; flex: 1; background: #718096; color: white; border: none; padding: 12px; font-size: 18px; border-radius: 8px; cursor: pointer; font-weight: bold;">取消編輯</button>
@@ -141,7 +157,6 @@
             </div>
         </div>
 
-        <!-- 🚀 新增：一鍵壓縮舊照片區塊 -->
         <div class="admin-section">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f1f1; padding-bottom: 12px; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
                 <h3 id="ui-manage-menu-title" style="border: none; padding: 0; margin: 0;">📝 管理現有菜單 (編輯與刪除)</h3>
@@ -150,17 +165,6 @@
             <div id="admin-menu-list"></div>
         </div>
 
-        <div class="admin-section">
-            <h3 id="ui-sales-chart-title">📊 銷售數量統計</h3>
-            <div class="chart-container">
-                <canvas id="salesChart"></canvas>
-            </div>
-        </div>
-
-        <div class="admin-section">
-            <h3 id="ui-order-list-title">📝 詳細訂單列表</h3>
-            <div id="admin-orders"></div>
-        </div>
     </div>
 
     <script src="script.js"></script>

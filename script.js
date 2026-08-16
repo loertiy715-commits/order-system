@@ -22,12 +22,12 @@ const uiTexts = {
         tableLbl: "請輸入桌號：",
         checkoutBtn: "送出訂單",
         logoutAdmin: "⬅️ 登出並返回首頁",
-        clearOrders: "🗑️ 清空所有歷史訂單",
+        clearOrders: "🗑️ 清空未結帳訂單",
         adminTitle: "管理員後台",
         addMenuTitle: "➕ 新增 / 編輯餐點",
         manageMenuTitle: "📝 管理現有菜單 (編輯與刪除)",
         salesChartTitle: "📊 銷售數量統計",
-        orderListTitle: "📝 詳細訂單列表",
+        orderListTitle: "📝 進行中訂單 (未結帳)",
         allCategory: "全部餐點",
         qtyText: "數量:",
         addCartBtn: "➕ 加入購物車",
@@ -46,12 +46,12 @@ const uiTexts = {
         tableLbl: "Table No:",
         checkoutBtn: "Submit Order",
         logoutAdmin: "⬅️ Logout & Home",
-        clearOrders: "🗑️ Clear All History",
+        clearOrders: "🗑️ Clear Unpaid",
         adminTitle: "Admin Dashboard",
         addMenuTitle: "➕ Add / Edit Dish",
         manageMenuTitle: "📝 Manage Menu (Edit & Delete)",
         salesChartTitle: "📊 Sales Statistics",
-        orderListTitle: "📝 Order List",
+        orderListTitle: "📝 Active Orders",
         allCategory: "All Dishes",
         qtyText: "Qty:",
         addCartBtn: "➕ Add to Cart",
@@ -70,12 +70,12 @@ const uiTexts = {
         tableLbl: "テーブル番号:",
         checkoutBtn: "注文を送信",
         logoutAdmin: "⬅️ ログアウト",
-        clearOrders: "🗑️ 履歴をすべてクリア",
+        clearOrders: "🗑️ 未会計をクリア",
         adminTitle: "管理者画面",
         addMenuTitle: "➕ 新規追加 / 編集",
         manageMenuTitle: "📝 メニュー管理 (編集・削除)",
         salesChartTitle: "📊 売上統計",
-        orderListTitle: "📝 注文リスト",
+        orderListTitle: "📝 進行中の注文",
         allCategory: "すべて",
         qtyText: "数量:",
         addCartBtn: "🛒 カートに追加",
@@ -94,12 +94,12 @@ const uiTexts = {
         tableLbl: "테이블 번호:",
         checkoutBtn: "주문하기",
         logoutAdmin: "⬅️ 로그아웃",
-        clearOrders: "🗑️ 전체 내역 삭제",
+        clearOrders: "🗑️ 미결제 삭제",
         adminTitle: "관리자 대시보드",
         addMenuTitle: "➕ 메뉴 추가 / 수정",
         manageMenuTitle: "📝 메뉴 관리 (수정 및 삭제)",
         salesChartTitle: "📊 판매 통계",
-        orderListTitle: "📝 주문 목록",
+        orderListTitle: "📝 진행 중인 주문",
         allCategory: "전체 메뉴",
         qtyText: "수량:",
         addCartBtn: "➕ 장바구니 담기",
@@ -123,13 +123,13 @@ const categoriesMap = {
 
 let menuData = [];
 let savedOrders = [];
+let ledgerData = []; // 歷史帳本資料
 let currentLang = 'zh'; 
 let currentCategory = 'all';
 let editingItemId = null; 
 let cart = []; 
 let salesChartInstance = null; 
 
-// === Google Translate API ===
 async function translateWithGoogle(text, targetLang) {
     if (!text || text.trim() === "") return "";
     try {
@@ -146,12 +146,10 @@ async function translateWithGoogle(text, targetLang) {
         }
         return text;
     } catch (error) {
-        console.error("Google 翻譯 API 連線錯誤:", error);
         return text; 
     }
 }
 
-// === 舊資料的備用翻譯 ===
 function fallbackTranslate(text, lang) {
     if (!text || lang === 'zh') return text;
     const dict = {
@@ -165,7 +163,6 @@ function fallbackTranslate(text, lang) {
     return text;
 }
 
-// === 後台「打字即時自動翻譯」防手震聯動 ===
 document.addEventListener("DOMContentLoaded", () => {
     const nameZhInput = document.getElementById('new-name-zh');
     const descZhInput = document.getElementById('new-desc-zh');
@@ -205,7 +202,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-// === 資料庫讀取 ===
 db.ref('restaurant_menu').on('value', (snapshot) => {
     let data = snapshot.val();
     if (data) {
@@ -222,12 +218,22 @@ db.ref('restaurant_menu').on('value', (snapshot) => {
     }
 });
 
+// 讀取未結帳訂單
 db.ref('restaurant_orders').on('value', (snapshot) => {
     let data = snapshot.val();
     savedOrders = data ? (Array.isArray(data) ? data : Object.values(data)) : [];
     if (document.getElementById('admin-screen').style.display === 'block') {
         renderAdminOrders();
-        renderSalesChart();
+    }
+});
+
+// 讀取已結帳歷史帳本
+db.ref('restaurant_ledger').on('value', (snapshot) => {
+    let data = snapshot.val();
+    ledgerData = data ? (Array.isArray(data) ? data : Object.values(data)) : [];
+    if (document.getElementById('admin-screen').style.display === 'block') {
+        renderLedger();
+        renderSalesChart(); // 讓圖表以「已結帳」的資料為主
     }
 });
 
@@ -440,6 +446,7 @@ window.adminLogin = function() {
         document.getElementById('lang-screen').style.display = 'none';
         document.getElementById('admin-screen').style.display = 'block';
         renderAdminOrders();
+        renderLedger();
         renderSalesChart();
         renderAdminMenu(); 
     } else if (password !== null) {
@@ -455,7 +462,7 @@ window.logoutAdmin = function() {
 function renderAdminOrders() {
     const container = document.getElementById('admin-orders');
     if (savedOrders.length === 0) {
-        container.innerHTML = "<p>目前沒有任何訂單紀錄。</p>";
+        container.innerHTML = "<p style='color: #666;'>目前沒有任何未結帳的訂單。</p>";
         return;
     }
     
@@ -470,25 +477,92 @@ function renderAdminOrders() {
         });
         orderHTML += `</ul>
             <h4>總計金額: NT$ ${order.total}</h4>
-            <button onclick="deleteOrder(${index})" class="delete-btn" style="margin-top: 10px;">🗑️ 刪除此筆訂單</button>
+            <div style="margin-top: 10px; display: flex;">
+                <button onclick="completeOrder(${index})" class="pay-btn">💰 確認結帳</button>
+                <button onclick="deleteOrder(${index})" class="delete-btn">🗑️ 取消訂單</button>
+            </div>
         </div>`;
         htmlContent += orderHTML;
     });
     container.innerHTML = htmlContent;
 }
 
-window.deleteOrder = function(index) {
-    if (confirm(`確定要刪除「訂單編號 #${index + 1}」嗎？`)) {
+// === 結帳：轉移至帳本 ===
+window.completeOrder = function(index) {
+    if (confirm("確認這筆訂單已結帳，並記入歷史帳本嗎？")) {
+        const orderToMove = savedOrders[index];
+        orderToMove.paidTime = new Date().toLocaleString(); // 記錄結帳時間
+        
         savedOrders.splice(index, 1);
+        
         db.ref('restaurant_orders').set(savedOrders).then(() => {
-            alert("已成功刪除該筆訂單！");
+            db.ref('restaurant_ledger').push(orderToMove);
+            alert("✅ 結帳成功！已寫入帳本。");
         });
     }
 }
 
+window.deleteOrder = function(index) {
+    if (confirm(`確定要取消「訂單編號 #${index + 1}」嗎？這將不會記錄到帳本中。`)) {
+        savedOrders.splice(index, 1);
+        db.ref('restaurant_orders').set(savedOrders).then(() => {
+            alert("已取消該筆訂單！");
+        });
+    }
+}
+
+// === 渲染帳本與營業額 ===
+function renderLedger() {
+    const container = document.getElementById('admin-ledger');
+    let totalRevenue = 0;
+
+    if (ledgerData.length === 0) {
+        container.innerHTML = "<p style='color: #666;'>目前沒有已結帳的帳本紀錄。</p>";
+        document.getElementById('total-revenue').innerText = "0";
+        return;
+    }
+
+    let htmlContent = '';
+    // 從最新結帳的訂單開始顯示 (反轉陣列)
+    [...ledgerData].reverse().forEach((order) => {
+        totalRevenue += order.total;
+        let tableText = order.table ? `<span style="color: #e63946; font-weight: bold; margin-left: 10px;">[桌號: ${order.table}]</span>` : '';
+        htmlContent += `<div class="order-card" style="border-left-color: #38a169; background: white;">
+            <h3 style="color: #2f855a; margin-top:0;">✅ 已結帳 ${tableText} <span style="font-size: 13px; color: #888; margin-left: 10px;">(點餐: ${order.time} | 結帳: ${order.paidTime || order.time})</span></h3>
+            <ul style="margin: 5px 0;">`;
+        order.items.forEach(item => {
+            htmlContent += `<li>${item.name} x ${item.quantity}</li>`;
+        });
+        htmlContent += `</ul>
+            <h4 style="margin-bottom:0; color: #22543d;">總額: NT$ ${order.total}</h4>
+        </div>`;
+    });
+
+    container.innerHTML = htmlContent;
+    // 更新營業額顯示
+    document.getElementById('total-revenue').innerText = totalRevenue.toLocaleString();
+}
+
+// === 清空相關按鈕 ===
+window.clearOrders = function() {
+    if (confirm("⚠️ 確定要清空所有的「未結帳」訂單嗎？")) {
+        db.ref('restaurant_orders').remove().then(() => alert("未結帳訂單已清空！"));
+    }
+}
+
+window.clearLedger = function() {
+    const pwd = prompt("⚠️ 警告：清空帳本將刪除所有營業額紀錄！請輸入管理員密碼確認：");
+    if (pwd === "0905852418") {
+        db.ref('restaurant_ledger').remove().then(() => alert("歷史帳本與營業額已全數清空！"));
+    } else if (pwd !== null) {
+        alert("密碼錯誤，拒絕清空！");
+    }
+}
+
+// === 銷售圖表：改為統計「已結帳 (帳本)」的數量 ===
 function renderSalesChart() {
     let salesData = {}; 
-    savedOrders.forEach(order => {
+    ledgerData.forEach(order => {
         order.items.forEach(item => {
             salesData[item.name] = (salesData[item.name] || 0) + item.quantity;
         });
@@ -505,10 +579,10 @@ function renderSalesChart() {
         data: {
             labels: labels,
             datasets: [{
-                label: '總銷售數量',
+                label: '總銷售數量 (已結帳)',
                 data: data,
-                backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                borderColor: 'rgba(54, 162, 235, 1)',
+                backgroundColor: 'rgba(56, 161, 105, 0.6)',
+                borderColor: 'rgba(56, 161, 105, 1)',
                 borderWidth: 1
             }]
         },
@@ -516,14 +590,6 @@ function renderSalesChart() {
             scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
         }
     });
-}
-
-window.clearOrders = function() {
-    if (confirm("⚠️ 確定要清空所有的歷史訂單嗎？")) {
-        db.ref('restaurant_orders').remove().then(() => {
-            alert("歷史訂單已清空！");
-        });
-    }
 }
 
 function renderAdminMenu() {
@@ -604,7 +670,6 @@ window.deleteMenuItem = function(index) {
     }
 }
 
-// === 🚀 終極殺手鐧：一鍵壓縮所有舊照片 (解決卡頓) ===
 window.compressAllOldImages = async function() {
     if (!confirm("⚠️ 這會自動將所有舊的大圖片壓縮，大幅提升網頁載入速度。這需要幾秒鐘的時間，確定要執行嗎？")) return;
 
