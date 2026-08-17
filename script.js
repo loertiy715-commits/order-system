@@ -130,7 +130,7 @@ let editingItemId = null;
 let cart = []; 
 let salesChartInstance = null; 
 
-// === 核心運算：處理 100 元特別酒類「3瓶200」的促銷邏輯 ===
+// === 核心運算：處理 100 元特別酒類「3瓶200」的精準促銷邏輯 ===
 window.calculateItemSubtotal = function(item) {
     if (item.name.includes("特別酒類") && item.price === 100) {
         let promoSets = Math.floor(item.quantity / 3); 
@@ -453,6 +453,7 @@ window.checkout = function() {
     });
 }
 
+// === 將密碼更新為 0000 ===
 window.adminLogin = function() {
     const password = prompt("請輸入管理員密碼：");
     if (password === "0000") {
@@ -472,6 +473,7 @@ window.logoutAdmin = function() {
     document.getElementById('lang-screen').style.display = 'block';
 }
 
+// === 渲染進行中訂單：升級專業 POS 排版 ===
 function renderAdminOrders() {
     const container = document.getElementById('admin-orders');
     if (savedOrders.length === 0) {
@@ -530,10 +532,11 @@ function renderAdminOrders() {
                 </div>
                 
                 <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px;">
-                    <select id="bev-type-${index}" class="input-clean" style="width: auto; max-width: 250px;">
+                    <select id="bev-type-${index}" class="input-clean" style="width: auto; max-width: 280px;">
                         <option value="50" data-name="飲料/啤酒 ($50)">🥤 飲料/啤酒 ($50)</option>
                         <option value="90" data-name="一般啤酒 ($90)">🍺 一般啤酒 ($90)</option>
-                        <option value="100" data-name="特別酒類 (促銷3瓶200)">🍾 特別酒類 ($100 / 3瓶200)</option>
+                        <option value="100" data-name="飲料 ($100)">🍹 飲料 ($100)</option>
+                        <option value="100" data-name="特別酒類 ($100 / 3瓶200)">🍾 特別酒類 ($100 / 3瓶200)</option>
                         <option value="110" data-name="啤酒 ($110)">🍺 啤酒 ($110)</option>
                         <option value="250" data-name="高級酒類 ($250)">🍷 高級酒類 ($250)</option>
                     </select>
@@ -706,6 +709,7 @@ window.clearOrders = function() {
     }
 }
 
+// === 將清空帳本密碼也更新為 0000 ===
 window.clearLedger = function() {
     const pwd = prompt("⚠️ 警告：清空帳本將刪除所有營業額紀錄！請輸入管理員密碼確認：");
     if (pwd === "0000") {
