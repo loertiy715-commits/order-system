@@ -130,12 +130,12 @@ let editingItemId = null;
 let cart = []; 
 let salesChartInstance = null; 
 
-// === 核心運算：處理 110 元特別酒類「3瓶200」的促銷邏輯 ===
+// === 核心運算：處理 100 元特別酒類「3瓶200」的促銷邏輯 ===
 window.calculateItemSubtotal = function(item) {
-    if (item.name.includes("特別酒類") && item.price === 110) {
+    if (item.name.includes("特別酒類") && item.price === 100) {
         let promoSets = Math.floor(item.quantity / 3); 
         let remainder = item.quantity % 3;             
-        return (promoSets * 200) + (remainder * 110);
+        return (promoSets * 200) + (remainder * 100);
     }
     return item.price * item.quantity;
 };
@@ -411,7 +411,7 @@ window.showCart = function() {
 
     cart.forEach(cartItem => {
         let subtotal = calculateItemSubtotal(cartItem);
-        let promoText = (cartItem.name.includes("特別酒類") && cartItem.price === 110 && cartItem.quantity >= 3) 
+        let promoText = (cartItem.name.includes("特別酒類") && cartItem.price === 100 && cartItem.quantity >= 3) 
             ? `<span style="color:#e63946; font-size:14px; margin-left:5px;">(套用優惠)</span>` : '';
         cartHTML += `<li>${cartItem.name} x ${cartItem.quantity}份 - NT$ ${subtotal} ${promoText}</li>`;
     });
@@ -453,7 +453,6 @@ window.checkout = function() {
     });
 }
 
-// === 將密碼更新為 0000 ===
 window.adminLogin = function() {
     const password = prompt("請輸入管理員密碼：");
     if (password === "0000") {
@@ -473,7 +472,6 @@ window.logoutAdmin = function() {
     document.getElementById('lang-screen').style.display = 'block';
 }
 
-// === 渲染進行中訂單：升級專業 POS 排版 ===
 function renderAdminOrders() {
     const container = document.getElementById('admin-orders');
     if (savedOrders.length === 0) {
@@ -497,7 +495,7 @@ function renderAdminOrders() {
             
         order.items.forEach((item, itemIdx) => {
             let subtotal = calculateItemSubtotal(item);
-            let promoText = (item.name.includes("特別酒類") && item.price === 110 && item.quantity >= 3) 
+            let promoText = (item.name.includes("特別酒類") && item.price === 100 && item.quantity >= 3) 
                 ? `<span style="color:#c53030; font-size:12px; margin-left:8px; background: #fed7d7; padding: 2px 6px; border-radius: 4px;">優惠</span>` : '';
                 
             orderHTML += `
@@ -535,9 +533,8 @@ function renderAdminOrders() {
                     <select id="bev-type-${index}" class="input-clean" style="width: auto; max-width: 250px;">
                         <option value="50" data-name="飲料/啤酒 ($50)">🥤 飲料/啤酒 ($50)</option>
                         <option value="90" data-name="一般啤酒 ($90)">🍺 一般啤酒 ($90)</option>
-                        <option value="100" data-name="飲料 ($100)">🍹 飲料 ($100)</option>
+                        <option value="100" data-name="特別酒類 (促銷3瓶200)">🍾 特別酒類 ($100 / 3瓶200)</option>
                         <option value="110" data-name="啤酒 ($110)">🍺 啤酒 ($110)</option>
-                        <option value="110" data-name="特別酒類 (促銷3瓶200)">🍾 特別酒類 ($110 / 3瓶200)</option>
                         <option value="250" data-name="高級酒類 ($250)">🍷 高級酒類 ($250)</option>
                     </select>
                     <span style="font-weight:bold;">數量:</span> 
@@ -709,7 +706,6 @@ window.clearOrders = function() {
     }
 }
 
-// === 將清空帳本密碼也更新為 0000 ===
 window.clearLedger = function() {
     const pwd = prompt("⚠️ 警告：清空帳本將刪除所有營業額紀錄！請輸入管理員密碼確認：");
     if (pwd === "0000") {
