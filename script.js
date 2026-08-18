@@ -16,19 +16,17 @@ const uiTexts = {
         selectLang: "請選擇語言 / Select Language",
         adminLogin: "⚙️ 管理員登入",
         backLang: "⬅️ 返回語言選擇",
-        selectTableTitle: "請選擇桌號",
-        confirmTableBtn: "確認並開始點餐",
-        backTable: "⬅️ 重新選擇桌號",
         cartBtn: "🛒 購物車",
         backMenu: "⬅️ 繼續點餐",
         cartTitle: "購物車 (訂單明細)",
+        tableLbl: "請輸入桌號：",
         checkoutBtn: "送出訂單",
         logoutAdmin: "⬅️ 登出並返回首頁",
         clearOrders: "🗑️ 清空未結帳訂單",
         adminTitle: "管理員後台",
         addMenuTitle: "➕ 新增 / 編輯餐點",
         manageMenuTitle: "📝 管理現有菜單 (編輯與刪除)",
-        salesChartTitle: "📊 銷售數量統計 (依已結帳計算)",
+        salesChartTitle: "📊 銷售數量統計",
         orderListTitle: "📝 進行中訂單 (收銀與加點)",
         allCategory: "全部餐點",
         qtyText: "數量:",
@@ -42,12 +40,10 @@ const uiTexts = {
         selectLang: "Select Language",
         adminLogin: "⚙️ Admin Login",
         backLang: "⬅️ Back",
-        selectTableTitle: "Please Select Table",
-        confirmTableBtn: "Confirm & Start",
-        backTable: "⬅️ Reselect Table",
         cartBtn: "🛒 Cart",
         backMenu: "⬅️ Continue",
         cartTitle: "Cart (Order Details)",
+        tableLbl: "Table No:",
         checkoutBtn: "Submit Order",
         logoutAdmin: "⬅️ Logout & Home",
         clearOrders: "🗑️ Clear Unpaid",
@@ -61,19 +57,17 @@ const uiTexts = {
         addCartBtn: "➕ Add to Cart",
         totalText: "Total",
         emptyCart: "Cart is empty!",
-        requireTable: "Please select a table!",
+        requireTable: "Please enter your table number!",
         orderSuccess: "Order submitted! Boss notified!"
     },
     jp: {
         selectLang: "言語を選択してください / Select Language",
         adminLogin: "⚙️ 管理者ログイン",
         backLang: "⬅️ 戻る",
-        selectTableTitle: "テーブル番号を選択",
-        confirmTableBtn: "確認して注文開始",
-        backTable: "⬅️ テーブル再選択",
         cartBtn: "🛒 カート",
         backMenu: "⬅️ 注文続行",
         cartTitle: "カート (注文詳細)",
+        tableLbl: "テーブル番号:",
         checkoutBtn: "注文を送信",
         logoutAdmin: "⬅️ ログアウト",
         clearOrders: "🗑️ 未会計をクリア",
@@ -94,12 +88,10 @@ const uiTexts = {
         selectLang: "언어 선택 / Select Language",
         adminLogin: "⚙️ 관리자 로그인",
         backLang: "⬅️ 뒤로",
-        selectTableTitle: "테이블 번호 선택",
-        confirmTableBtn: "확인 및 주문 시작",
-        backTable: "⬅️ 테이블 다시 선택",
         cartBtn: "🛒 장바구니",
         backMenu: "⬅️ 계속 주문",
         cartTitle: "장바구니 (주문 상세)",
+        tableLbl: "테이블 번호:",
         checkoutBtn: "주문하기",
         logoutAdmin: "⬅️ 로그아웃",
         clearOrders: "🗑️ 미결제 삭제",
@@ -133,13 +125,13 @@ let menuData = [];
 let savedOrders = [];
 let ledgerData = []; 
 let currentLang = 'zh'; 
-let currentTable = ''; // 全局儲存桌號
+let currentTable = ''; 
 let currentCategory = 'all';
 let editingItemId = null; 
 let cart = []; 
 let salesChartInstance = null; 
 
-// === 核心運算：處理 100 元特別酒類「3瓶200」的精準促銷邏輯 ===
+// === 核心運算：處理 100 元特別酒類「3瓶200」的促銷邏輯 ===
 window.calculateItemSubtotal = function(item) {
     if (item.name.includes("特別酒類") && item.price === 100) {
         let promoSets = Math.floor(item.quantity / 3); 
@@ -279,7 +271,6 @@ window.confirmTable = function() {
     }
     currentTable = tableVal;
     
-    // 更新點餐畫面最上方的桌號顯示
     document.getElementById('current-table-display').innerText = currentTable;
     
     document.getElementById('table-screen').style.display = 'none';
@@ -303,7 +294,6 @@ function updateUITexts() {
     if(document.getElementById('ui-back-lang-from-table')) document.getElementById('ui-back-lang-from-table').innerText = t.backLang;
     if(document.getElementById('ui-back-table')) document.getElementById('ui-back-table').innerText = t.backTable;
     
-    // 更新桌號下拉選單的第一項預設文字
     const tableSelect = document.getElementById('table-select');
     if(tableSelect && tableSelect.options.length > 0) {
         if(currentLang === 'zh') tableSelect.options[0].text = "-- 選擇桌號 --";
@@ -463,6 +453,7 @@ window.showCart = function() {
     cartList.innerHTML = cartHTML;
 }
 
+// === 🚀 核心升級：智慧同桌併單邏輯 ===
 window.checkout = function() {
     if (cart.length === 0) {
         alert(uiTexts[currentLang].emptyCart);
@@ -474,23 +465,47 @@ window.checkout = function() {
         return;
     }
     
-    const newOrder = {
-        time: new Date().toLocaleString(),
-        table: currentTable, // 直接使用全域儲存的桌號
-        items: cart,
-        total: calculateOrderTotal(cart)
-    };
+    // 尋找是否已經有該桌號的「未結帳訂單」
+    const existingOrderIndex = savedOrders.findIndex(order => order.table === currentTable);
+
+    if (existingOrderIndex !== -1) {
+        // --- 執行併單邏輯 ---
+        let existingOrder = savedOrders[existingOrderIndex];
+        
+        // 把購物車的餐點加進現有訂單
+        cart.forEach(cartItem => {
+            // 檢查該訂單中是否已經有相同的餐點（名稱與價格相同則合併數量）
+            let existingItem = existingOrder.items.find(i => i.name === cartItem.name && i.price === cartItem.price);
+            if (existingItem) {
+                existingItem.quantity += cartItem.quantity; 
+            } else {
+                existingOrder.items.push({ ...cartItem });  
+            }
+        });
+        
+        existingOrder.time = new Date().toLocaleString(); // 更新最後加點時間
+        existingOrder.total = calculateOrderTotal(existingOrder.items); // 重新計算總額
+        
+    } else {
+        // --- 新增訂單邏輯 (該桌號尚未點餐) ---
+        const newOrder = {
+            time: new Date().toLocaleString(),
+            table: currentTable, 
+            items: [...cart],
+            total: calculateOrderTotal(cart)
+        };
+        savedOrders.push(newOrder);
+    }
     
-    const updatedOrders = [...savedOrders, newOrder];
-    
-    db.ref('restaurant_orders').set(updatedOrders).then(() => {
+    // 儲存至資料庫
+    db.ref('restaurant_orders').set(savedOrders).then(() => {
         alert(uiTexts[currentLang].orderSuccess);
         cart = []; 
-        currentTable = ""; 
-        document.getElementById('table-select').value = ""; // 重設桌號選單
         updateCartCount();
+        currentTable = ""; 
+        document.getElementById('table-select').value = ""; 
         document.getElementById('cart-screen').style.display = 'none';
-        document.getElementById('lang-screen').style.display = 'block'; // 返回首頁
+        document.getElementById('lang-screen').style.display = 'block'; 
     }).catch(error => {
         alert("連線失敗：" + error);
     });
@@ -653,7 +668,15 @@ window.addFishToOrder = function(orderIndex) {
     if (isNaN(qty) || qty <= 0) return alert("數量錯誤！");
 
     let order = savedOrders[orderIndex];
-    order.items.push({ id: "FISH_"+Date.now(), name: type, price: price, quantity: qty });
+    
+    // 海鮮也執行併單檢查
+    let existingItem = order.items.find(i => i.name === type && i.price === price);
+    if (existingItem) {
+        existingItem.quantity += qty;
+    } else {
+        order.items.push({ id: "FISH_"+Date.now(), name: type, price: price, quantity: qty });
+    }
+    
     db.ref('restaurant_orders').set(savedOrders);
 }
 
