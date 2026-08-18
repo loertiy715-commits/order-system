@@ -24,16 +24,49 @@
         <button class="admin-login-btn" id="ui-admin-login" onclick="adminLogin()">⚙️ 管理員登入</button>
     </div>
 
+    <!-- 畫面 1.5：選擇桌號 (全新加入) -->
+    <div id="table-screen" class="screen" style="display: none;">
+        <div class="header">
+            <button id="ui-back-lang-from-table" onclick="backToLangFromTable()">⬅️ 返回語言選擇</button>
+        </div>
+        <h2 id="ui-select-table-title" style="text-align: center; margin-top: 50px;">請選擇桌號</h2>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 20px; margin-top: 30px;">
+            <select id="table-select" style="font-size: 24px; padding: 10px 20px; border-radius: 8px; border: 2px solid #ccc; width: 250px; text-align: center; cursor: pointer;">
+                <option value="">-- 選擇桌號 --</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4-1">4-1</option>
+                <option value="4-2">4-2</option>
+                <option value="4外">4外</option>
+                <option value="5">5</option>
+                <option value="6-1">6-1</option>
+                <option value="6-2">6-2</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="15">15</option>
+                <option value="16外">16外</option>
+                <option value="16內">16內</option>
+            </select>
+            <button id="ui-confirm-table-btn" onclick="confirmTable()" style="background: #38a169; color: white; font-size: 24px; padding: 12px 40px; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">確認並開始點餐</button>
+        </div>
+    </div>
+
     <!-- 畫面二：點餐畫面 -->
     <div id="menu-screen" class="screen" style="display: none;">
         <div class="header">
-            <button id="ui-back-lang" onclick="backToLang()">⬅️ 返回語言選擇</button>
+            <button id="ui-back-table" onclick="backToTable()">⬅️ 重新選擇桌號</button>
+            <div style="font-size: 20px; font-weight: bold; color: #2b6cb0; display: flex; align-items: center; background: #ebf8ff; padding: 5px 15px; border-radius: 20px; border: 1px solid #bee3f8;">📌 桌號：<span id="current-table-display"></span></div>
         </div>
         
+        <!-- 左右滑動分類列 -->
         <div class="category-scroll-container" id="category-scroll"></div>
 
         <div id="menu-container"></div>
         
+        <!-- 永遠懸浮在右下角的購物車按鈕 -->
         <button id="ui-cart-btn" class="floating-cart-btn" onclick="showCart()">🛒 購物車 (<span id="cart-count">0</span>)</button>
     </div>
 
@@ -43,13 +76,9 @@
             <button id="ui-back-menu" onclick="backToMenu()">⬅️ 繼續點餐</button>
         </div>
         <h2 id="ui-cart-title">購物車 (訂單明細)</h2>
-        <ul id="cart-list"></ul>
+        <ul id="cart-list" style="margin-bottom: 25px;"></ul>
         
-        <div class="table-input-container">
-            <label id="ui-table-lbl">桌號：</label>
-            <input type="text" id="table-number" placeholder="例如：5">
-        </div>
-
+        <!-- 結帳按鈕直接送出 (桌號已在前面選過) -->
         <div class="cart-actions">
             <button id="ui-checkout-btn" onclick="checkout()" style="background: #e63946; color: white; font-size: 20px; padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; width: 100%;">送出訂單</button>
         </div>
@@ -65,11 +94,11 @@
         
         <!-- 進行中訂單 (收銀區) -->
         <div class="admin-section">
-            <h3 id="ui-order-list-title">📝 進行中訂單 (未結帳)</h3>
+            <h3 id="ui-order-list-title">📝 進行中訂單 (收銀與加點)</h3>
             <div id="admin-orders"></div>
         </div>
 
-        <!-- 新增：歷史帳本與營業額區塊 -->
+        <!-- 歷史帳本與營業額區塊 -->
         <div class="admin-section" style="background: #f0fdf4; border: 1px solid #c6f6d5;">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #c6f6d5; padding-bottom: 12px; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
                 <h3 style="border: none; padding: 0; margin: 0; color: #22543d;">📔 歷史帳本 (已結帳)</h3>
@@ -81,7 +110,7 @@
 
         <!-- 銷售統計 (改為統計已結帳) -->
         <div class="admin-section">
-            <h3 id="ui-sales-chart-title">📊 銷售數量統計 (依已結帳計算)</h3>
+            <h3 id="ui-sales-chart-title">📊 銷售數量統計</h3>
             <div class="chart-container">
                 <canvas id="salesChart"></canvas>
             </div>

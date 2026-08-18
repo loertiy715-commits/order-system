@@ -16,34 +16,38 @@ const uiTexts = {
         selectLang: "請選擇語言 / Select Language",
         adminLogin: "⚙️ 管理員登入",
         backLang: "⬅️ 返回語言選擇",
+        selectTableTitle: "請選擇桌號",
+        confirmTableBtn: "確認並開始點餐",
+        backTable: "⬅️ 重新選擇桌號",
         cartBtn: "🛒 購物車",
         backMenu: "⬅️ 繼續點餐",
         cartTitle: "購物車 (訂單明細)",
-        tableLbl: "請輸入桌號：",
         checkoutBtn: "送出訂單",
         logoutAdmin: "⬅️ 登出並返回首頁",
         clearOrders: "🗑️ 清空未結帳訂單",
         adminTitle: "管理員後台",
         addMenuTitle: "➕ 新增 / 編輯餐點",
         manageMenuTitle: "📝 管理現有菜單 (編輯與刪除)",
-        salesChartTitle: "📊 銷售數量統計",
+        salesChartTitle: "📊 銷售數量統計 (依已結帳計算)",
         orderListTitle: "📝 進行中訂單 (收銀與加點)",
         allCategory: "全部餐點",
         qtyText: "數量:",
         addCartBtn: "➕ 加入購物車",
         totalText: "總計",
         emptyCart: "購物車是空的喔！",
-        requireTable: "請填寫桌號！",
+        requireTable: "請選擇桌號！",
         orderSuccess: "訂單已送出！老闆已經收到通知囉！"
     },
     en: {
         selectLang: "Select Language",
         adminLogin: "⚙️ Admin Login",
         backLang: "⬅️ Back",
+        selectTableTitle: "Please Select Table",
+        confirmTableBtn: "Confirm & Start",
+        backTable: "⬅️ Reselect Table",
         cartBtn: "🛒 Cart",
         backMenu: "⬅️ Continue",
         cartTitle: "Cart (Order Details)",
-        tableLbl: "Table No:",
         checkoutBtn: "Submit Order",
         logoutAdmin: "⬅️ Logout & Home",
         clearOrders: "🗑️ Clear Unpaid",
@@ -57,17 +61,19 @@ const uiTexts = {
         addCartBtn: "➕ Add to Cart",
         totalText: "Total",
         emptyCart: "Cart is empty!",
-        requireTable: "Please enter your table number!",
+        requireTable: "Please select a table!",
         orderSuccess: "Order submitted! Boss notified!"
     },
     jp: {
         selectLang: "言語を選択してください / Select Language",
         adminLogin: "⚙️ 管理者ログイン",
         backLang: "⬅️ 戻る",
+        selectTableTitle: "テーブル番号を選択",
+        confirmTableBtn: "確認して注文開始",
+        backTable: "⬅️ テーブル再選択",
         cartBtn: "🛒 カート",
         backMenu: "⬅️ 注文続行",
         cartTitle: "カート (注文詳細)",
-        tableLbl: "テーブル番号:",
         checkoutBtn: "注文を送信",
         logoutAdmin: "⬅️ ログアウト",
         clearOrders: "🗑️ 未会計をクリア",
@@ -81,17 +87,19 @@ const uiTexts = {
         addCartBtn: "🛒 カートに追加",
         totalText: "合計",
         emptyCart: "カートは空です！",
-        requireTable: "テーブル番号を入力してください！",
+        requireTable: "テーブルを選択してください！",
         orderSent: "注文を送信しました！"
     },
     kr: {
         selectLang: "언어 선택 / Select Language",
         adminLogin: "⚙️ 관리자 로그인",
         backLang: "⬅️ 뒤로",
+        selectTableTitle: "테이블 번호 선택",
+        confirmTableBtn: "확인 및 주문 시작",
+        backTable: "⬅️ 테이블 다시 선택",
         cartBtn: "🛒 장바구니",
         backMenu: "⬅️ 계속 주문",
         cartTitle: "장바구니 (주문 상세)",
-        tableLbl: "테이블 번호:",
         checkoutBtn: "주문하기",
         logoutAdmin: "⬅️ 로그아웃",
         clearOrders: "🗑️ 미결제 삭제",
@@ -105,7 +113,7 @@ const uiTexts = {
         addCartBtn: "➕ 장바구니 담기",
         totalText: "합계",
         emptyCart: "장바구니가 비어 있습니다!",
-        requireTable: "테이블 번호를 입력해 주세요!",
+        requireTable: "테이블을 선택해주세요!",
         orderSent: "주문이 완료되었습니다!"
     }
 };
@@ -125,11 +133,13 @@ let menuData = [];
 let savedOrders = [];
 let ledgerData = []; 
 let currentLang = 'zh'; 
+let currentTable = ''; // 全局儲存桌號
 let currentCategory = 'all';
 let editingItemId = null; 
 let cart = []; 
 let salesChartInstance = null; 
 
+// === 核心運算：處理 100 元特別酒類「3瓶200」的精準促銷邏輯 ===
 window.calculateItemSubtotal = function(item) {
     if (item.name.includes("特別酒類") && item.price === 100) {
         let promoSets = Math.floor(item.quantity / 3); 
@@ -143,6 +153,7 @@ window.calculateOrderTotal = function(items) {
     return items.reduce((sum, item) => sum + window.calculateItemSubtotal(item), 0);
 };
 
+// === Google Translate API ===
 async function translateWithGoogle(text, targetLang) {
     if (!text || text.trim() === "") return "";
     try {
@@ -247,24 +258,63 @@ db.ref('restaurant_ledger').on('value', (snapshot) => {
     }
 });
 
-function chooseLang(lang) {
+// === 導覽流程：選語言 -> 選桌號 -> 點餐 ===
+window.chooseLang = function(lang) {
     currentLang = lang;
     updateUITexts();
     document.getElementById('lang-screen').style.display = 'none';
+    document.getElementById('table-screen').style.display = 'block'; 
+}
+
+window.backToLangFromTable = function() {
+    document.getElementById('table-screen').style.display = 'none';
+    document.getElementById('lang-screen').style.display = 'block';
+}
+
+window.confirmTable = function() {
+    const tableVal = document.getElementById('table-select').value;
+    if (!tableVal) {
+        alert(uiTexts[currentLang].requireTable);
+        return;
+    }
+    currentTable = tableVal;
+    
+    // 更新點餐畫面最上方的桌號顯示
+    document.getElementById('current-table-display').innerText = currentTable;
+    
+    document.getElementById('table-screen').style.display = 'none';
     document.getElementById('menu-screen').style.display = 'block';
     currentCategory = 'all';
-    renderMenu(); 
+    renderMenu();
+}
+
+window.backToTable = function() {
+    document.getElementById('menu-screen').style.display = 'none';
+    document.getElementById('table-screen').style.display = 'block';
 }
 
 function updateUITexts() {
     const t = uiTexts[currentLang];
     document.getElementById('ui-select-lang').innerText = t.selectLang;
     document.getElementById('ui-admin-login').innerText = t.adminLogin;
-    document.getElementById('ui-back-lang').innerText = t.backLang;
+    
+    if(document.getElementById('ui-select-table-title')) document.getElementById('ui-select-table-title').innerText = t.selectTableTitle;
+    if(document.getElementById('ui-confirm-table-btn')) document.getElementById('ui-confirm-table-btn').innerText = t.confirmTableBtn;
+    if(document.getElementById('ui-back-lang-from-table')) document.getElementById('ui-back-lang-from-table').innerText = t.backLang;
+    if(document.getElementById('ui-back-table')) document.getElementById('ui-back-table').innerText = t.backTable;
+    
+    // 更新桌號下拉選單的第一項預設文字
+    const tableSelect = document.getElementById('table-select');
+    if(tableSelect && tableSelect.options.length > 0) {
+        if(currentLang === 'zh') tableSelect.options[0].text = "-- 選擇桌號 --";
+        if(currentLang === 'en') tableSelect.options[0].text = "-- Select Table --";
+        if(currentLang === 'jp') tableSelect.options[0].text = "-- テーブル選択 --";
+        if(currentLang === 'kr') tableSelect.options[0].text = "-- 테이블 선택 --";
+    }
+
     document.getElementById('ui-cart-btn').innerHTML = `🛒 ${t.cartBtn} (<span id="cart-count">${cart.reduce((sum, item) => sum + item.quantity, 0)}</span>)`;
     document.getElementById('ui-back-menu').innerText = t.backMenu;
     document.getElementById('ui-cart-title').innerText = t.cartTitle;
-    document.getElementById('ui-table-lbl').innerText = t.tableLbl;
     document.getElementById('ui-checkout-btn').innerText = t.checkoutBtn;
     document.getElementById('ui-logout-admin').innerText = t.logoutAdmin;
     document.getElementById('ui-clear-orders').innerText = t.clearOrders;
@@ -274,11 +324,6 @@ function updateUITexts() {
     document.getElementById('ui-manage-menu-title').innerText = t.manageMenuTitle;
     document.getElementById('ui-sales-chart-title').innerText = t.salesChartTitle;
     document.getElementById('ui-order-list-title').innerText = t.orderListTitle;
-}
-
-function backToLang() {
-    document.getElementById('lang-screen').style.display = 'block';
-    document.getElementById('menu-screen').style.display = 'none';
 }
 
 function backToMenu() {
@@ -424,15 +469,14 @@ window.checkout = function() {
         return;
     }
 
-    const tableNo = document.getElementById('table-number').value.trim();
-    if (!tableNo) {
+    if (!currentTable) {
         alert(uiTexts[currentLang].requireTable);
         return;
     }
     
     const newOrder = {
         time: new Date().toLocaleString(),
-        table: tableNo, 
+        table: currentTable, // 直接使用全域儲存的桌號
         items: cart,
         total: calculateOrderTotal(cart)
     };
@@ -442,10 +486,11 @@ window.checkout = function() {
     db.ref('restaurant_orders').set(updatedOrders).then(() => {
         alert(uiTexts[currentLang].orderSuccess);
         cart = []; 
+        currentTable = ""; 
+        document.getElementById('table-select').value = ""; // 重設桌號選單
         updateCartCount();
-        document.getElementById('table-number').value = ''; 
         document.getElementById('cart-screen').style.display = 'none';
-        document.getElementById('lang-screen').style.display = 'block'; 
+        document.getElementById('lang-screen').style.display = 'block'; // 返回首頁
     }).catch(error => {
         alert("連線失敗：" + error);
     });
