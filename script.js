@@ -131,21 +131,27 @@ let editingItemId = null;
 let cart = []; 
 let salesChartInstance = null; 
 
-// === 核心運算：處理 100 元特別酒類「3瓶200」的促銷邏輯 ===
-window.calculateItemSubtotal = function(item) {
-    if (item.name.includes("特別酒類") && item.price === 100) {
-        let promoSets = Math.floor(item.quantity / 3); 
-        let remainder = item.quantity % 3;             
-        return (promoSets * 200) + (remainder * 100);
-    }
-    return item.price * item.quantity;
-};
-
+// === 核心運算：自動將散落的酒類統計並給予折抵 ===
 window.calculateOrderTotal = function(items) {
-    return items.reduce((sum, item) => sum + window.calculateItemSubtotal(item), 0);
+    let total = 0;
+    let specialWineCount = 0;
+    
+    items.forEach(item => {
+        if (item.name.includes("特別酒類") && item.price === 100) {
+            specialWineCount += item.quantity;
+        }
+        total += item.price * item.quantity; // 先以原價加總
+    });
+    
+    // 如果符合 3 瓶以上，自動扣除折扣 (每 3 瓶扣 100)
+    if (specialWineCount >= 3) {
+        let promoSets = Math.floor(specialWineCount / 3);
+        let discount = promoSets * 100;
+        total -= discount;
+    }
+    return total;
 };
 
-// === Google Translate API ===
 async function translateWithGoogle(text, targetLang) {
     if (!text || text.trim() === "") return "";
     try {
@@ -440,14 +446,18 @@ window.showCart = function() {
     let cartHTML = '';
 
     let total = calculateOrderTotal(cart);
+    let specialWineCount = cart.reduce((sum, item) => (item.name.includes("特別酒類") && item.price === 100) ? sum + item.quantity : sum, 0);
 
     cart.forEach(cartItem => {
-        let subtotal = calculateItemSubtotal(cartItem);
-        let promoText = (cartItem.name.includes("特別酒類") && cartItem.price === 100 && cartItem.quantity >= 3) 
-            ? `<span style="color:#e63946; font-size:14px; margin-left:5px;">(套用優惠)</span>` : '';
-        cartHTML += `<li>${cartItem.name} x ${cartItem.quantity}份 - NT$ ${subtotal} ${promoText}</li>`;
+        let subtotal = cartItem.price * cartItem.quantity;
+        cartHTML += `<li>${cartItem.name} x ${cartItem.quantity}份 - NT$ ${subtotal}</li>`;
     });
     
+    if (specialWineCount >= 3) {
+        let discount = Math.floor(specialWineCount / 3) * 100;
+        cartHTML += `<li style="color:#e63946; list-style-type: none; font-weight: bold; margin-top: 10px;">🎉 促銷折抵 (特別酒類3瓶200): -NT$ ${discount}</li>`;
+    }
+
     cartHTML += `<h3>${uiTexts[currentLang].totalText}: NT$ ${total}</h3>`;
     cartList.innerHTML = cartHTML;
 }
@@ -464,17 +474,14 @@ window.checkout = function() {
     }
     
     const existingOrderIndex = savedOrders.findIndex(order => order.table === currentTable);
+    let currentTime = new Date().toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
 
     if (existingOrderIndex !== -1) {
         let existingOrder = savedOrders[existingOrderIndex];
         
+        // ⚠️ 關鍵更改：不再合併餐點數量，而是直接追加並標記為 "加點"
         cart.forEach(cartItem => {
-            let existingItem = existingOrder.items.find(i => i.name === cartItem.name && i.price === cartItem.price);
-            if (existingItem) {
-                existingItem.quantity += cartItem.quantity; 
-            } else {
-                existingOrder.items.push({ ...cartItem });  
-            }
+            existingOrder.items.push({ ...cartItem, isAddOn: true, addTime: currentTime });  
         });
         
         existingOrder.time = new Date().toLocaleString(); 
@@ -484,7 +491,7 @@ window.checkout = function() {
         const newOrder = {
             time: new Date().toLocaleString(),
             table: currentTable, 
-            items: [...cart],
+            items: cart.map(i => ({...i, isAddOn: false})), // 標記為原始餐點
             total: calculateOrderTotal(cart)
         };
         savedOrders.push(newOrder);
@@ -523,7 +530,7 @@ window.logoutAdmin = function() {
     document.getElementById('lang-screen').style.display = 'block';
 }
 
-// === 🚀 強制寫死 CSS 的直向列排版，保證覆蓋任何快取問題 ===
+// === 🚀 核心升級：左側原始餐點、右側後續加點 (雙欄專業排版) ===
 function renderAdminOrders() {
     const container = document.getElementById('admin-orders');
     if (savedOrders.length === 0) {
@@ -537,38 +544,70 @@ function renderAdminOrders() {
         
         let tableText = order.table ? `<span style="color: #e53e3e; font-weight: bold; margin-left: 8px;">[桌號: ${order.table}]</span>` : '';
         
-        let orderHTML = `<div class="order-card" style="background: white; border-top: 5px solid #3182ce; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.08);">
-            <div style="border-bottom: 2px solid #edf2f7; padding-bottom: 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
-                <h3 style="margin: 0; color: #2b6cb0; font-size: 20px;">📌 訂單 #${index + 1} ${tableText}</h3>
-                <span style="font-size: 14px; color: #718096;">🕒 ${order.time}</span>
-            </div>
+        let orderHTML = `<div class="order-card" style="background: white; border-top: 5px solid #3182ce; padding: 20px; margin-bottom: 25px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
+            <div style="border-bottom: 2px solid #edf2f7; padding-bottom: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                <h3 style="margin: 0; color: #2b6cb0; font-size: 22px;">📌 訂單 #${index + 1} ${tableText}</h3>
+                <span style="font-size: 14px; color: #718096;">🕒 最新狀態: ${order.time}</span>
+            </div>`;
             
-            <div style="margin-bottom: 15px;">`;
-            
-        // 這裡強制使用 display: flex 的列排版 (一排一餐點，價錢靠右)
+        let originalItemsHTML = '';
+        let addonItemsHTML = '';
+        let specialWineCount = 0;
+
         order.items.forEach((item, itemIdx) => {
-            let subtotal = calculateItemSubtotal(item);
-            let promoText = (item.name.includes("特別酒類") && item.price === 100 && item.quantity >= 3) 
-                ? `<span style="color:#c53030; font-size:12px; margin-left:8px; background: #fed7d7; padding: 2px 6px; border-radius: 4px;">優惠</span>` : '';
-                
-            orderHTML += `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #edf2f7;">
-                    <div style="font-size: 18px; color: #2d3748; font-weight: 500; display: flex; align-items: center;">
-                        <span style="display: inline-block; width: 35px; font-weight: bold; color: #2b6cb0;">${item.quantity}x</span>
-                        ${item.name} ${promoText}
+            if (item.name.includes("特別酒類") && item.price === 100) {
+                specialWineCount += item.quantity;
+            }
+
+            let subtotal = item.price * item.quantity; // 顯示單品原價
+            let timeText = item.addTime ? `<span style="font-size:13px; color:#a0aec0; margin-left:6px;">(${item.addTime})</span>` : '';
+
+            let itemRow = `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #edf2f7;">
+                    <div style="font-size: 17px; color: #2d3748; font-weight: 500; display: flex; align-items: center;">
+                        <span style="display: inline-block; width: 35px; font-weight: bold; color: ${item.isAddOn ? '#dd6b20' : '#2b6cb0'};">${item.quantity}x</span>
+                        ${item.name} ${timeText}
                     </div>
                     <div style="display: flex; align-items: center; gap: 15px;">
-                        <span style="font-size: 18px; font-weight: bold; color: #e53e3e; min-width: 80px; text-align: right;">NT$ ${subtotal}</span>
-                        <button onclick="removeOrderItem(${index}, ${itemIdx})" style="background: #fc8181; color: white; border: none; border-radius: 6px; padding: 6px 12px; font-size: 14px; cursor: pointer;">刪除</button>
+                        <span style="font-size: 17px; font-weight: bold; color: #4a5568; min-width: 60px; text-align: right;">$${subtotal}</span>
+                        <button onclick="removeOrderItem(${index}, ${itemIdx})" style="background: #fc8181; color: white; border: none; border-radius: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer;">刪除</button>
                     </div>
                 </div>`;
+
+            if (item.isAddOn) {
+                addonItemsHTML += itemRow;
+            } else {
+                originalItemsHTML += itemRow;
+            }
         });
-        
-        orderHTML += `</div>
+
+        // == 雙欄容器佈局 ==
+        orderHTML += `<div style="display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 15px;">
+            <div style="flex: 1; min-width: 300px; background: #faf8f5; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; align-self: flex-start;">
+                <h4 style="margin: 0 0 10px 0; color: #4a5568; border-bottom: 2px solid #edf2f7; padding-bottom: 8px; font-size: 18px;">🧾 原始餐點</h4>
+                ${originalItemsHTML || '<p style="color:#a0aec0; font-size:15px; margin:0;">無</p>'}
+            </div>`;
+
+        if (addonItemsHTML !== '') {
+            orderHTML += `
+            <div style="flex: 1; min-width: 300px; background: #fffaf0; padding: 15px; border-radius: 8px; border: 1px dashed #ecc94b; align-self: flex-start;">
+                <h4 style="margin: 0 0 10px 0; color: #dd6b20; border-bottom: 2px solid #feebc8; padding-bottom: 8px; font-size: 18px;">⚡ 後續加點紀錄</h4>
+                ${addonItemsHTML}
+            </div>`;
+        }
+        orderHTML += `</div>`; // 雙欄容器結束
+
+        // 如果有酒類折扣，獨立顯示在底下
+        if (specialWineCount >= 3) {
+            let discount = Math.floor(specialWineCount / 3) * 100;
+            orderHTML += `<div style="text-align: right; color: #e53e3e; font-weight: bold; font-size: 17px; margin: 15px 0;">🎉 特別酒類促銷折抵: -NT$ ${discount}</div>`;
+        }
             
+        // 臨時加點面板與收銀區塊
+        orderHTML += `
             <!-- 臨時加點面板 -->
             <div id="quick-add-${index}" style="display:none; background: #fffaf0; border: 1px dashed #ecc94b; padding: 15px; margin-top: 15px; border-radius: 8px;">
-                <h4 style="margin-top:0; color:#b7791f; font-size: 16px;">⚡ 臨時加點 (海鮮/酒水)</h4>
+                <h4 style="margin-top:0; color:#b7791f; font-size: 16px;">⚡ 快速加點區 (海鮮/酒水)</h4>
                 
                 <div style="margin-bottom:12px; display:flex; align-items:center; flex-wrap:wrap; gap:8px;">
                     <select id="fish-type-${index}" style="padding: 8px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 15px;">
@@ -579,7 +618,7 @@ function renderAdminOrders() {
                     <input type="number" id="fish-price-${index}" placeholder="輸入時價" style="width:100px; padding: 8px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 15px;">
                     <span style="font-weight:bold;">數量:</span> 
                     <input type="number" id="fish-qty-${index}" value="1" min="1" style="width:70px; padding: 8px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 15px;">
-                    <button onclick="addFishToOrder(${index})" style="background: #d69e2e; color: white; border: none; padding: 9px 15px; border-radius: 6px; cursor: pointer; font-weight: bold;">加入</button>
+                    <button onclick="addFishToOrder(${index})" style="background: #d69e2e; color: white; border: none; padding: 9px 15px; border-radius: 6px; cursor: pointer; font-weight: bold;">加入帳單</button>
                 </div>
                 
                 <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px;">
@@ -596,14 +635,14 @@ function renderAdminOrders() {
                     </select>
                     <span style="font-weight:bold;">數量:</span> 
                     <input type="number" id="bev-qty-${index}" value="1" min="1" style="width:70px; padding: 8px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 15px;">
-                    <button onclick="addBevToOrder(${index})" style="background: #d69e2e; color: white; border: none; padding: 9px 15px; border-radius: 6px; cursor: pointer; font-weight: bold;">加入</button>
+                    <button onclick="addBevToOrder(${index})" style="background: #d69e2e; color: white; border: none; padding: 9px 15px; border-radius: 6px; cursor: pointer; font-weight: bold;">加入帳單</button>
                 </div>
             </div>
 
             <!-- 收銀機區塊 -->
-            <div style="background: #f0fdf4; padding: 20px; margin-top: 20px; border-radius: 8px; border: 1px solid #9ae6b4;">
+            <div style="background: #f0fdf4; padding: 20px; margin-top: 15px; border-radius: 8px; border: 1px solid #9ae6b4;">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap:15px; margin-bottom: 15px;">
-                    <span style="font-size:22px; font-weight:bold; color: #2d3748;">應收: <span style="color:#e53e3e;">NT$ ${order.total}</span></span>
+                    <span style="font-size:22px; font-weight:bold; color: #2d3748;">應收總額: <span style="color:#e53e3e;">NT$ ${order.total}</span></span>
                     
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <span style="font-size: 20px; font-weight: bold; color: #4a5568;">實收: $</span>
@@ -663,12 +702,11 @@ window.addFishToOrder = function(orderIndex) {
     if (isNaN(qty) || qty <= 0) return alert("數量錯誤！");
 
     let order = savedOrders[orderIndex];
-    let existingItem = order.items.find(i => i.name === type && i.price === price);
-    if (existingItem) {
-        existingItem.quantity += qty;
-    } else {
-        order.items.push({ id: "FISH_"+Date.now(), name: type, price: price, quantity: qty });
-    }
+    let currentTime = new Date().toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
+    
+    // ⚠️ 加入為加點屬性，不合併數量
+    order.items.push({ id: "FISH_"+Date.now(), name: type, price: price, quantity: qty, isAddOn: true, addTime: currentTime });
+    
     db.ref('restaurant_orders').set(savedOrders);
 }
 
@@ -681,13 +719,9 @@ window.addBevToOrder = function(orderIndex) {
     if (isNaN(qty) || qty <= 0) return alert("數量錯誤！");
 
     let order = savedOrders[orderIndex];
-    let existingItem = order.items.find(i => i.name === name && i.price === price);
-    if (existingItem) {
-        existingItem.quantity += qty;
-    } else {
-        order.items.push({ id: "BEV_"+Date.now(), name: name, price: price, quantity: qty });
-    }
+    let currentTime = new Date().toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
 
+    order.items.push({ id: "BEV_"+Date.now(), name: name, price: price, quantity: qty, isAddOn: true, addTime: currentTime });
     db.ref('restaurant_orders').set(savedOrders);
 }
 
@@ -696,6 +730,8 @@ window.removeOrderItem = function(orderIndex, itemIndex) {
         savedOrders[orderIndex].items.splice(itemIndex, 1);
         if (savedOrders[orderIndex].items.length === 0) {
             savedOrders.splice(orderIndex, 1);
+        } else {
+            savedOrders[orderIndex].total = calculateOrderTotal(savedOrders[orderIndex].items);
         }
         db.ref('restaurant_orders').set(savedOrders);
     }
@@ -733,7 +769,7 @@ window.deleteOrder = function(index) {
     }
 }
 
-// === 渲染歷史帳本：同樣套用強制直列防禦 ===
+// === 渲染歷史帳本 ===
 function renderLedger() {
     const container = document.getElementById('admin-ledger');
     let totalRevenue = 0;
@@ -748,24 +784,33 @@ function renderLedger() {
     [...ledgerData].reverse().forEach((order) => {
         totalRevenue += order.total;
         let tableText = order.table ? `<span style="color: #e63946; font-weight: bold; margin-left: 10px;">[桌號: ${order.table}]</span>` : '';
-        htmlContent += `<div style="background: white; border-top: 5px solid #38a169; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.08);">
-            <h3 style="color: #2f855a; margin-top:0; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">✅ 已結帳 ${tableText} <span style="font-size: 13px; color: #888; margin-left: 10px;">(點餐: ${order.time} | 結帳: ${order.paidTime || order.time})</span></h3>
+        htmlContent += `<div class="order-card" style="border-top: 5px solid #38a169; background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.08);">
+            <h3 style="color: #2f855a; margin-top:0; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">✅ 已結帳 ${tableText} <span style="font-size: 13px; color: #888; margin-left: 10px;">(結帳: ${order.paidTime || order.time})</span></h3>
             
             <div style="margin: 12px 0;">`;
             
+        let specialWineCount = 0;
         order.items.forEach(item => {
-            let subtotal = calculateItemSubtotal(item);
+            if (item.name.includes("特別酒類") && item.price === 100) specialWineCount += item.quantity;
+            let subtotal = item.price * item.quantity;
+            let typeTag = item.isAddOn ? `<span style="font-size:12px; color:#dd6b20; margin-left:6px;">(加點)</span>` : '';
+            
             htmlContent += `
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed #e2e8f0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #e2e8f0;">
                     <div style="color: #2d3748; font-size: 17px; font-weight: 500;">
-                        <span style="display: inline-block; width: 35px; font-weight: bold; color: #276749;">${item.quantity}x</span>
-                        ${item.name}
+                        <span style="display: inline-block; width: 35px; font-weight: bold; color: ${item.isAddOn ? '#dd6b20' : '#276749'};">${item.quantity}x</span>
+                        ${item.name} ${typeTag}
                     </div>
                     <div>
                         <span style="color: #2d3748; font-weight: bold; font-size: 17px;">NT$ ${subtotal}</span>
                     </div>
                 </div>`;
         });
+        
+        if (specialWineCount >= 3) {
+            let discount = Math.floor(specialWineCount / 3) * 100;
+            htmlContent += `<div style="text-align: right; color: #e53e3e; font-weight: bold; font-size: 15px; margin-top: 10px;">促銷折抵: -NT$ ${discount}</div>`;
+        }
         
         htmlContent += `</div>
             <h4 style="margin-bottom:0; color: #22543d; text-align: right; font-size: 22px;">總額: NT$ ${order.total}</h4>
