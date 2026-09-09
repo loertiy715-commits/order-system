@@ -131,7 +131,6 @@ let editingItemId = null;
 let cart = []; 
 let salesChartInstance = null; 
 
-// === 核心運算：處理 100 元特別酒類「3瓶200」的促銷邏輯 ===
 window.calculateItemSubtotal = function(item) {
     if (item.name.includes("特別酒類") && item.price === 100) {
         let promoSets = Math.floor(item.quantity / 3); 
@@ -145,7 +144,6 @@ window.calculateOrderTotal = function(items) {
     return items.reduce((sum, item) => sum + window.calculateItemSubtotal(item), 0);
 };
 
-// === Google Translate API ===
 async function translateWithGoogle(text, targetLang) {
     if (!text || text.trim() === "") return "";
     try {
@@ -250,7 +248,6 @@ db.ref('restaurant_ledger').on('value', (snapshot) => {
     }
 });
 
-// === 導覽流程：選語言 -> 選桌號 -> 點餐 ===
 window.chooseLang = function(lang) {
     currentLang = lang;
     updateUITexts();
@@ -464,7 +461,6 @@ window.checkout = function() {
         return;
     }
     
-    // 智慧同桌併單邏輯
     const existingOrderIndex = savedOrders.findIndex(order => order.table === currentTable);
 
     if (existingOrderIndex !== -1) {
@@ -505,7 +501,6 @@ window.checkout = function() {
     });
 }
 
-// 登入密碼維持 0000
 window.adminLogin = function() {
     const password = prompt("請輸入管理員密碼：");
     if (password === "0000") {
@@ -525,7 +520,7 @@ window.logoutAdmin = function() {
     document.getElementById('lang-screen').style.display = 'block';
 }
 
-// === 渲染進行中訂單：全新橫向積木式 (Chips) 排版 ===
+// === 渲染進行中訂單：直的顯示餐點，右側顯示價錢與刪除 (專業 POS 明細排版) ===
 function renderAdminOrders() {
     const container = document.getElementById('admin-orders');
     if (savedOrders.length === 0) {
@@ -545,21 +540,24 @@ function renderAdminOrders() {
                 <span style="font-size: 14px; color: #718096;">🕒 ${order.time}</span>
             </div>
             
-            <!-- 橫向展開的餐點區塊 -->
-            <div style="margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 10px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px dashed #cbd5e0;">`;
+            <div style="margin-bottom: 15px;">`;
             
         order.items.forEach((item, itemIdx) => {
             let subtotal = calculateItemSubtotal(item);
             let promoText = (item.name.includes("特別酒類") && item.price === 100 && item.quantity >= 3) 
-                ? `<span style="color:#c53030; font-size:12px; margin-left:6px; background: #fed7d7; padding: 2px 6px; border-radius: 4px;">優惠</span>` : '';
+                ? `<span style="color:#c53030; font-size:12px; margin-left:8px; background: #fed7d7; padding: 2px 6px; border-radius: 4px;">優惠</span>` : '';
                 
+            // 這裡使用了直列、橫向對齊的排版
             orderHTML += `
-                <div style="background: white; border: 1px solid #cbd5e0; padding: 8px 12px; border-radius: 8px; display: flex; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
-                    <span style="color: #2b6cb0; font-weight: bold; font-size: 16px; margin-right: 8px;">${item.quantity}x</span>
-                    <span style="font-size: 16px; color: #2d3748; font-weight: bold;">${item.name}</span>
-                    ${promoText}
-                    <span style="color: #e53e3e; font-weight: bold; margin-left: 10px; margin-right: 10px;">$${subtotal}</span>
-                    <button onclick="removeOrderItem(${index}, ${itemIdx})" style="background: #fc8181; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 13px;">刪除</button>
+                <div class="order-item-row">
+                    <div class="order-item-name">
+                        <span class="qty-badge">${item.quantity}x</span>
+                        ${item.name} ${promoText}
+                    </div>
+                    <div class="order-item-price-col">
+                        <span class="item-price-tag">NT$ ${subtotal}</span>
+                        <button onclick="removeOrderItem(${index}, ${itemIdx})" class="del-btn-small">刪除</button>
+                    </div>
                 </div>`;
         });
         
@@ -732,7 +730,7 @@ window.deleteOrder = function(index) {
     }
 }
 
-// === 渲染帳本：也套用橫向 Chips 排版 ===
+// === 渲染歷史帳本：同樣套用直列排版 ===
 function renderLedger() {
     const container = document.getElementById('admin-ledger');
     let totalRevenue = 0;
@@ -750,13 +748,20 @@ function renderLedger() {
         htmlContent += `<div class="order-card" style="border-left-color: #38a169; background: white;">
             <h3 style="color: #2f855a; margin-top:0; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">✅ 已結帳 ${tableText} <span style="font-size: 13px; color: #888; margin-left: 10px;">(點餐: ${order.time} | 結帳: ${order.paidTime || order.time})</span></h3>
             
-            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0;">`;
+            <div style="margin: 12px 0;">`;
             
         order.items.forEach(item => {
-            htmlContent += `<div style="background: #f0fdf4; border: 1px solid #9ae6b4; padding: 6px 12px; border-radius: 6px; font-size: 15px; color: #22543d; display: flex; align-items: center; gap: 6px;">
-                <span style="font-weight: bold; color: #276749;">${item.quantity}x</span> 
-                <span style="font-weight: bold;">${item.name}</span>
-            </div>`;
+            let subtotal = calculateItemSubtotal(item);
+            htmlContent += `
+                <div class="order-item-row" style="border-bottom: 1px dashed #e2e8f0; padding: 8px 0;">
+                    <div class="order-item-name" style="color: #2d3748;">
+                        <span class="qty-badge" style="color: #276749;">${item.quantity}x</span>
+                        ${item.name}
+                    </div>
+                    <div class="order-item-price-col">
+                        <span class="item-price-tag" style="color: #2d3748;">NT$ ${subtotal}</span>
+                    </div>
+                </div>`;
         });
         
         htmlContent += `</div>
@@ -774,9 +779,8 @@ window.clearOrders = function() {
     }
 }
 
-// === 專屬清空密碼改為 0905 ===
 window.clearLedger = function() {
-    const pwd = prompt("⚠️ 警告：清空帳本將刪除所有營業額紀錄！請輸入管理員密碼確認：");
+    const pwd = prompt("⚠️ 警告：清空帳本將刪除所有營業額紀錄！請輸入老闆專屬密碼確認：");
     if (pwd === "0905") {
         db.ref('restaurant_ledger').remove().then(() => alert("歷史帳本與營業額已全數清空！"));
     } else if (pwd !== null) {
