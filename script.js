@@ -131,6 +131,7 @@ let editingItemId = null;
 let cart = []; 
 let salesChartInstance = null; 
 
+// === 核心運算：處理 100 元特別酒類「3瓶200」的促銷邏輯 ===
 window.calculateItemSubtotal = function(item) {
     if (item.name.includes("特別酒類") && item.price === 100) {
         let promoSets = Math.floor(item.quantity / 3); 
@@ -144,6 +145,7 @@ window.calculateOrderTotal = function(items) {
     return items.reduce((sum, item) => sum + window.calculateItemSubtotal(item), 0);
 };
 
+// === Google Translate API ===
 async function translateWithGoogle(text, targetLang) {
     if (!text || text.trim() === "") return "";
     try {
@@ -501,6 +503,7 @@ window.checkout = function() {
     });
 }
 
+// 登入密碼維持 0000
 window.adminLogin = function() {
     const password = prompt("請輸入管理員密碼：");
     if (password === "0000") {
@@ -520,7 +523,7 @@ window.logoutAdmin = function() {
     document.getElementById('lang-screen').style.display = 'block';
 }
 
-// === 渲染進行中訂單：直的顯示餐點，右側顯示價錢與刪除 (專業 POS 明細排版) ===
+// === 🚀 強制寫死 CSS 的直向列排版，保證覆蓋任何快取問題 ===
 function renderAdminOrders() {
     const container = document.getElementById('admin-orders');
     if (savedOrders.length === 0) {
@@ -534,7 +537,7 @@ function renderAdminOrders() {
         
         let tableText = order.table ? `<span style="color: #e53e3e; font-weight: bold; margin-left: 8px;">[桌號: ${order.table}]</span>` : '';
         
-        let orderHTML = `<div class="order-card">
+        let orderHTML = `<div class="order-card" style="background: white; border-top: 5px solid #3182ce; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.08);">
             <div style="border-bottom: 2px solid #edf2f7; padding-bottom: 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                 <h3 style="margin: 0; color: #2b6cb0; font-size: 20px;">📌 訂單 #${index + 1} ${tableText}</h3>
                 <span style="font-size: 14px; color: #718096;">🕒 ${order.time}</span>
@@ -542,21 +545,21 @@ function renderAdminOrders() {
             
             <div style="margin-bottom: 15px;">`;
             
+        // 這裡強制使用 display: flex 的列排版 (一排一餐點，價錢靠右)
         order.items.forEach((item, itemIdx) => {
             let subtotal = calculateItemSubtotal(item);
             let promoText = (item.name.includes("特別酒類") && item.price === 100 && item.quantity >= 3) 
                 ? `<span style="color:#c53030; font-size:12px; margin-left:8px; background: #fed7d7; padding: 2px 6px; border-radius: 4px;">優惠</span>` : '';
                 
-            // 這裡使用了直列、橫向對齊的排版
             orderHTML += `
-                <div class="order-item-row">
-                    <div class="order-item-name">
-                        <span class="qty-badge">${item.quantity}x</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #edf2f7;">
+                    <div style="font-size: 18px; color: #2d3748; font-weight: 500; display: flex; align-items: center;">
+                        <span style="display: inline-block; width: 35px; font-weight: bold; color: #2b6cb0;">${item.quantity}x</span>
                         ${item.name} ${promoText}
                     </div>
-                    <div class="order-item-price-col">
-                        <span class="item-price-tag">NT$ ${subtotal}</span>
-                        <button onclick="removeOrderItem(${index}, ${itemIdx})" class="del-btn-small">刪除</button>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <span style="font-size: 18px; font-weight: bold; color: #e53e3e; min-width: 80px; text-align: right;">NT$ ${subtotal}</span>
+                        <button onclick="removeOrderItem(${index}, ${itemIdx})" style="background: #fc8181; color: white; border: none; border-radius: 6px; padding: 6px 12px; font-size: 14px; cursor: pointer;">刪除</button>
                     </div>
                 </div>`;
         });
@@ -564,23 +567,23 @@ function renderAdminOrders() {
         orderHTML += `</div>
             
             <!-- 臨時加點面板 -->
-            <div id="quick-add-${index}" class="quick-add-panel" style="display:none;">
+            <div id="quick-add-${index}" style="display:none; background: #fffaf0; border: 1px dashed #ecc94b; padding: 15px; margin-top: 15px; border-radius: 8px;">
                 <h4 style="margin-top:0; color:#b7791f; font-size: 16px;">⚡ 臨時加點 (海鮮/酒水)</h4>
                 
                 <div style="margin-bottom:12px; display:flex; align-items:center; flex-wrap:wrap; gap:8px;">
-                    <select id="fish-type-${index}" class="input-clean" style="width: auto;">
+                    <select id="fish-type-${index}" style="padding: 8px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 15px;">
                         <option value="烤海魚">🐟 烤海魚</option>
                         <option value="清蒸海魚">🐟 清蒸海魚</option>
                     </select>
                     <span style="font-weight:bold;">$</span> 
-                    <input type="number" id="fish-price-${index}" class="input-clean" placeholder="輸入時價" style="width:100px;">
+                    <input type="number" id="fish-price-${index}" placeholder="輸入時價" style="width:100px; padding: 8px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 15px;">
                     <span style="font-weight:bold;">數量:</span> 
-                    <input type="number" id="fish-qty-${index}" class="input-clean" value="1" min="1" style="width:70px;">
-                    <button class="quick-add-btn" onclick="addFishToOrder(${index})">加入</button>
+                    <input type="number" id="fish-qty-${index}" value="1" min="1" style="width:70px; padding: 8px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 15px;">
+                    <button onclick="addFishToOrder(${index})" style="background: #d69e2e; color: white; border: none; padding: 9px 15px; border-radius: 6px; cursor: pointer; font-weight: bold;">加入</button>
                 </div>
                 
                 <div style="display:flex; align-items:center; flex-wrap:wrap; gap:8px;">
-                    <select id="bev-type-${index}" class="input-clean" style="width: auto; max-width: 280px;">
+                    <select id="bev-type-${index}" style="padding: 8px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 15px; max-width: 280px;">
                         <option value="50" data-name="飲料/啤酒 ($50)">🥤 飲料/啤酒 ($50)</option>
                         <option value="80" data-name="啤酒 ($80)">🍺 啤酒 ($80)</option>
                         <option value="90" data-name="一般啤酒 ($90)">🍺 一般啤酒 ($90)</option>
@@ -592,28 +595,28 @@ function renderAdminOrders() {
                         <option value="250" data-name="高級酒類 ($250)">🍷 高級酒類 ($250)</option>
                     </select>
                     <span style="font-weight:bold;">數量:</span> 
-                    <input type="number" id="bev-qty-${index}" class="input-clean" value="1" min="1" style="width:70px;">
-                    <button class="quick-add-btn" onclick="addBevToOrder(${index})">加入</button>
+                    <input type="number" id="bev-qty-${index}" value="1" min="1" style="width:70px; padding: 8px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 15px;">
+                    <button onclick="addBevToOrder(${index})" style="background: #d69e2e; color: white; border: none; padding: 9px 15px; border-radius: 6px; cursor: pointer; font-weight: bold;">加入</button>
                 </div>
             </div>
 
             <!-- 收銀機區塊 -->
-            <div class="cashier-section">
+            <div style="background: #f0fdf4; padding: 20px; margin-top: 20px; border-radius: 8px; border: 1px solid #9ae6b4;">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap:15px; margin-bottom: 15px;">
-                    <span style="font-size:20px; font-weight:bold; color: #2d3748;">應收: <span style="color:#e53e3e;">NT$ ${order.total}</span></span>
+                    <span style="font-size:22px; font-weight:bold; color: #2d3748;">應收: <span style="color:#e53e3e;">NT$ ${order.total}</span></span>
                     
                     <div style="display: flex; align-items: center; gap: 8px;">
-                        <span style="font-size: 18px; font-weight: bold; color: #4a5568;">實收: $</span>
-                        <input type="number" id="cash-received-${index}" class="input-clean" oninput="calcChange(${index}, ${order.total})" style="width:110px; font-size:18px; text-align:center; margin:0;">
+                        <span style="font-size: 20px; font-weight: bold; color: #4a5568;">實收: $</span>
+                        <input type="number" id="cash-received-${index}" oninput="calcChange(${index}, ${order.total})" style="width:120px; font-size:20px; text-align:center; padding: 6px; border: 1px solid #cbd5e0; border-radius: 6px;">
                     </div>
                     
-                    <span style="font-size:20px; font-weight:bold; color:#276749;">找零: <span id="change-display-${index}">NT$ 0</span></span>
+                    <span style="font-size:22px; font-weight:bold; color:#276749;">找零: <span id="change-display-${index}">NT$ 0</span></span>
                 </div>
                 
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button onclick="toggleQuickAdd(${index})" style="background:#d69e2e; color:white; border:none; padding:12px 15px; border-radius:6px; font-weight:bold; cursor:pointer; font-size: 15px;">➕ 臨時加點</button>
-                    <button onclick="completeOrder(${index})" class="pay-btn" style="flex:1;">💰 確認結帳並印入帳本</button>
-                    <button onclick="deleteOrder(${index})" style="background:#a0aec0; color:white; border:none; padding:12px 15px; border-radius:6px; font-weight:bold; cursor:pointer; font-size: 15px;">🗑️ 取消訂單</button>
+                    <button onclick="toggleQuickAdd(${index})" style="background:#d69e2e; color:white; border:none; padding:12px 15px; border-radius:6px; font-weight:bold; cursor:pointer; font-size: 16px;">➕ 臨時加點</button>
+                    <button onclick="completeOrder(${index})" style="background: #38a169; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-size: 18px; font-weight: bold; flex: 1;">💰 確認結帳並印入帳本</button>
+                    <button onclick="deleteOrder(${index})" style="background:#a0aec0; color:white; border:none; padding:12px 15px; border-radius:6px; font-weight:bold; cursor:pointer; font-size: 16px;">🗑️ 取消訂單</button>
                 </div>
             </div>
             
@@ -730,7 +733,7 @@ window.deleteOrder = function(index) {
     }
 }
 
-// === 渲染歷史帳本：同樣套用直列排版 ===
+// === 渲染歷史帳本：同樣套用強制直列防禦 ===
 function renderLedger() {
     const container = document.getElementById('admin-ledger');
     let totalRevenue = 0;
@@ -745,7 +748,7 @@ function renderLedger() {
     [...ledgerData].reverse().forEach((order) => {
         totalRevenue += order.total;
         let tableText = order.table ? `<span style="color: #e63946; font-weight: bold; margin-left: 10px;">[桌號: ${order.table}]</span>` : '';
-        htmlContent += `<div class="order-card" style="border-left-color: #38a169; background: white;">
+        htmlContent += `<div style="background: white; border-top: 5px solid #38a169; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.08);">
             <h3 style="color: #2f855a; margin-top:0; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">✅ 已結帳 ${tableText} <span style="font-size: 13px; color: #888; margin-left: 10px;">(點餐: ${order.time} | 結帳: ${order.paidTime || order.time})</span></h3>
             
             <div style="margin: 12px 0;">`;
@@ -753,19 +756,19 @@ function renderLedger() {
         order.items.forEach(item => {
             let subtotal = calculateItemSubtotal(item);
             htmlContent += `
-                <div class="order-item-row" style="border-bottom: 1px dashed #e2e8f0; padding: 8px 0;">
-                    <div class="order-item-name" style="color: #2d3748;">
-                        <span class="qty-badge" style="color: #276749;">${item.quantity}x</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed #e2e8f0;">
+                    <div style="color: #2d3748; font-size: 17px; font-weight: 500;">
+                        <span style="display: inline-block; width: 35px; font-weight: bold; color: #276749;">${item.quantity}x</span>
                         ${item.name}
                     </div>
-                    <div class="order-item-price-col">
-                        <span class="item-price-tag" style="color: #2d3748;">NT$ ${subtotal}</span>
+                    <div>
+                        <span style="color: #2d3748; font-weight: bold; font-size: 17px;">NT$ ${subtotal}</span>
                     </div>
                 </div>`;
         });
         
         htmlContent += `</div>
-            <h4 style="margin-bottom:0; color: #22543d; text-align: right; font-size: 20px;">總額: NT$ ${order.total}</h4>
+            <h4 style="margin-bottom:0; color: #22543d; text-align: right; font-size: 22px;">總額: NT$ ${order.total}</h4>
         </div>`;
     });
 
@@ -779,6 +782,7 @@ window.clearOrders = function() {
     }
 }
 
+// === 將清空帳本密碼更新為 0905 ===
 window.clearLedger = function() {
     const pwd = prompt("⚠️ 警告：清空帳本將刪除所有營業額紀錄！請輸入老闆專屬密碼確認：");
     if (pwd === "0905") {
