@@ -131,7 +131,6 @@ let editingItemId = null;
 let cart = []; 
 let salesChartInstance = null; 
 
-// === 核心運算：自動將散落的酒類統計並給予折抵 ===
 window.calculateOrderTotal = function(items) {
     let total = 0;
     let specialWineCount = 0;
@@ -140,10 +139,9 @@ window.calculateOrderTotal = function(items) {
         if (item.name.includes("特別酒類") && item.price === 100) {
             specialWineCount += item.quantity;
         }
-        total += item.price * item.quantity; // 先以原價加總
+        total += item.price * item.quantity; 
     });
     
-    // 如果符合 3 瓶以上，自動扣除折扣 (每 3 瓶扣 100)
     if (specialWineCount >= 3) {
         let promoSets = Math.floor(specialWineCount / 3);
         let discount = promoSets * 100;
@@ -462,6 +460,7 @@ window.showCart = function() {
     cartList.innerHTML = cartHTML;
 }
 
+// === 🚀 核心升級：結帳時不再疊加，改為獨立產生新列 ===
 window.checkout = function() {
     if (cart.length === 0) {
         alert(uiTexts[currentLang].emptyCart);
@@ -479,7 +478,7 @@ window.checkout = function() {
     if (existingOrderIndex !== -1) {
         let existingOrder = savedOrders[existingOrderIndex];
         
-        // ⚠️ 關鍵更改：不再合併餐點數量，而是直接追加並標記為 "加點"
+        // ⚠️ 絕對不合併！每一筆點餐直接寫入新的陣列並標記為加點
         cart.forEach(cartItem => {
             existingOrder.items.push({ ...cartItem, isAddOn: true, addTime: currentTime });  
         });
@@ -491,7 +490,7 @@ window.checkout = function() {
         const newOrder = {
             time: new Date().toLocaleString(),
             table: currentTable, 
-            items: cart.map(i => ({...i, isAddOn: false})), // 標記為原始餐點
+            items: cart.map(i => ({...i, isAddOn: false, addTime: currentTime})), 
             total: calculateOrderTotal(cart)
         };
         savedOrders.push(newOrder);
@@ -510,7 +509,6 @@ window.checkout = function() {
     });
 }
 
-// 登入密碼維持 0000
 window.adminLogin = function() {
     const password = prompt("請輸入管理員密碼：");
     if (password === "0000") {
@@ -530,7 +528,7 @@ window.logoutAdmin = function() {
     document.getElementById('lang-screen').style.display = 'block';
 }
 
-// === 🚀 核心升級：左側原始餐點、右側後續加點 (雙欄專業排版) ===
+// === 🚀 核心升級：專業雙欄對照排版 (左邊原始、右邊加點) ===
 function renderAdminOrders() {
     const container = document.getElementById('admin-orders');
     if (savedOrders.length === 0) {
@@ -555,13 +553,13 @@ function renderAdminOrders() {
         let specialWineCount = 0;
 
         order.items.forEach((item, itemIdx) => {
-            if (item.name.includes("特別酒類") && item.price === 100) {
-                specialWineCount += item.quantity;
-            }
+            if (item.name.includes("特別酒類") && item.price === 100) specialWineCount += item.quantity;
 
-            let subtotal = item.price * item.quantity; // 顯示單品原價
+            let subtotal = item.price * item.quantity; 
+            // 標示每筆點餐的精確時間
             let timeText = item.addTime ? `<span style="font-size:13px; color:#a0aec0; margin-left:6px;">(${item.addTime})</span>` : '';
 
+            // 直列排版的 Row 格式
             let itemRow = `
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #edf2f7;">
                     <div style="font-size: 17px; color: #2d3748; font-weight: 500; display: flex; align-items: center;">
@@ -581,7 +579,7 @@ function renderAdminOrders() {
             }
         });
 
-        // == 雙欄容器佈局 ==
+        // == 雙欄並排容器佈局 (Flexbox) ==
         orderHTML += `<div style="display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 15px;">
             <div style="flex: 1; min-width: 300px; background: #faf8f5; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; align-self: flex-start;">
                 <h4 style="margin: 0 0 10px 0; color: #4a5568; border-bottom: 2px solid #edf2f7; padding-bottom: 8px; font-size: 18px;">🧾 原始餐點</h4>
@@ -597,7 +595,7 @@ function renderAdminOrders() {
         }
         orderHTML += `</div>`; // 雙欄容器結束
 
-        // 如果有酒類折扣，獨立顯示在底下
+        // 如果有酒類折扣，獨立顯示在底下折抵
         if (specialWineCount >= 3) {
             let discount = Math.floor(specialWineCount / 3) * 100;
             orderHTML += `<div style="text-align: right; color: #e53e3e; font-weight: bold; font-size: 17px; margin: 15px 0;">🎉 特別酒類促銷折抵: -NT$ ${discount}</div>`;
@@ -693,6 +691,7 @@ window.toggleQuickAdd = function(index) {
     }
 }
 
+// ⚠️ 從後台按鈕直接加點，也一律不疊加，直接 Push 為新的一行
 window.addFishToOrder = function(orderIndex) {
     const type = document.getElementById(`fish-type-${orderIndex}`).value;
     const price = parseInt(document.getElementById(`fish-price-${orderIndex}`).value);
@@ -704,8 +703,8 @@ window.addFishToOrder = function(orderIndex) {
     let order = savedOrders[orderIndex];
     let currentTime = new Date().toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
     
-    // ⚠️ 加入為加點屬性，不合併數量
-    order.items.push({ id: "FISH_"+Date.now(), name: type, price: price, quantity: qty, isAddOn: true, addTime: currentTime });
+    // 直接推入新的陣列元素，不作合併檢查
+    order.items.push({ id: "FISH_"+Date.now()+Math.floor(Math.random()*1000), name: type, price: price, quantity: qty, isAddOn: true, addTime: currentTime });
     
     db.ref('restaurant_orders').set(savedOrders);
 }
@@ -721,7 +720,9 @@ window.addBevToOrder = function(orderIndex) {
     let order = savedOrders[orderIndex];
     let currentTime = new Date().toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
 
-    order.items.push({ id: "BEV_"+Date.now(), name: name, price: price, quantity: qty, isAddOn: true, addTime: currentTime });
+    // 直接推入新的陣列元素，不作合併檢查
+    order.items.push({ id: "BEV_"+Date.now()+Math.floor(Math.random()*1000), name: name, price: price, quantity: qty, isAddOn: true, addTime: currentTime });
+
     db.ref('restaurant_orders').set(savedOrders);
 }
 
@@ -769,7 +770,6 @@ window.deleteOrder = function(index) {
     }
 }
 
-// === 渲染歷史帳本 ===
 function renderLedger() {
     const container = document.getElementById('admin-ledger');
     let totalRevenue = 0;
@@ -793,13 +793,15 @@ function renderLedger() {
         order.items.forEach(item => {
             if (item.name.includes("特別酒類") && item.price === 100) specialWineCount += item.quantity;
             let subtotal = item.price * item.quantity;
+            
+            let timeText = item.addTime ? `<span style="font-size:13px; color:#a0aec0; margin-left:6px;">(${item.addTime})</span>` : '';
             let typeTag = item.isAddOn ? `<span style="font-size:12px; color:#dd6b20; margin-left:6px;">(加點)</span>` : '';
             
             htmlContent += `
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #e2e8f0;">
                     <div style="color: #2d3748; font-size: 17px; font-weight: 500;">
                         <span style="display: inline-block; width: 35px; font-weight: bold; color: ${item.isAddOn ? '#dd6b20' : '#276749'};">${item.quantity}x</span>
-                        ${item.name} ${typeTag}
+                        ${item.name} ${typeTag} ${timeText}
                     </div>
                     <div>
                         <span style="color: #2d3748; font-weight: bold; font-size: 17px;">NT$ ${subtotal}</span>
@@ -827,7 +829,7 @@ window.clearOrders = function() {
     }
 }
 
-// === 將清空帳本密碼更新為 0905 ===
+// === 專屬清空帳本密碼：0905 ===
 window.clearLedger = function() {
     const pwd = prompt("⚠️ 警告：清空帳本將刪除所有營業額紀錄！請輸入老闆專屬密碼確認：");
     if (pwd === "0905") {
