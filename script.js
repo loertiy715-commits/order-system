@@ -453,7 +453,6 @@ window.showCart = function() {
     cartList.innerHTML = cartHTML;
 }
 
-// === 🚀 核心升級：智慧同桌併單邏輯 ===
 window.checkout = function() {
     if (cart.length === 0) {
         alert(uiTexts[currentLang].emptyCart);
@@ -465,16 +464,13 @@ window.checkout = function() {
         return;
     }
     
-    // 尋找是否已經有該桌號的「未結帳訂單」
+    // 智慧同桌併單邏輯
     const existingOrderIndex = savedOrders.findIndex(order => order.table === currentTable);
 
     if (existingOrderIndex !== -1) {
-        // --- 執行併單邏輯 ---
         let existingOrder = savedOrders[existingOrderIndex];
         
-        // 把購物車的餐點加進現有訂單
         cart.forEach(cartItem => {
-            // 檢查該訂單中是否已經有相同的餐點（名稱與價格相同則合併數量）
             let existingItem = existingOrder.items.find(i => i.name === cartItem.name && i.price === cartItem.price);
             if (existingItem) {
                 existingItem.quantity += cartItem.quantity; 
@@ -483,11 +479,10 @@ window.checkout = function() {
             }
         });
         
-        existingOrder.time = new Date().toLocaleString(); // 更新最後加點時間
-        existingOrder.total = calculateOrderTotal(existingOrder.items); // 重新計算總額
+        existingOrder.time = new Date().toLocaleString(); 
+        existingOrder.total = calculateOrderTotal(existingOrder.items); 
         
     } else {
-        // --- 新增訂單邏輯 (該桌號尚未點餐) ---
         const newOrder = {
             time: new Date().toLocaleString(),
             table: currentTable, 
@@ -497,7 +492,6 @@ window.checkout = function() {
         savedOrders.push(newOrder);
     }
     
-    // 儲存至資料庫
     db.ref('restaurant_orders').set(savedOrders).then(() => {
         alert(uiTexts[currentLang].orderSuccess);
         cart = []; 
@@ -511,6 +505,7 @@ window.checkout = function() {
     });
 }
 
+// 登入密碼維持 0000
 window.adminLogin = function() {
     const password = prompt("請輸入管理員密碼：");
     if (password === "0000") {
@@ -530,6 +525,7 @@ window.logoutAdmin = function() {
     document.getElementById('lang-screen').style.display = 'block';
 }
 
+// === 渲染進行中訂單：全新橫向積木式 (Chips) 排版 ===
 function renderAdminOrders() {
     const container = document.getElementById('admin-orders');
     if (savedOrders.length === 0) {
@@ -549,23 +545,21 @@ function renderAdminOrders() {
                 <span style="font-size: 14px; color: #718096;">🕒 ${order.time}</span>
             </div>
             
-            <div style="margin-bottom: 15px;">`;
+            <!-- 橫向展開的餐點區塊 -->
+            <div style="margin-bottom: 15px; display: flex; flex-wrap: wrap; gap: 10px; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px dashed #cbd5e0;">`;
             
         order.items.forEach((item, itemIdx) => {
             let subtotal = calculateItemSubtotal(item);
             let promoText = (item.name.includes("特別酒類") && item.price === 100 && item.quantity >= 3) 
-                ? `<span style="color:#c53030; font-size:12px; margin-left:8px; background: #fed7d7; padding: 2px 6px; border-radius: 4px;">優惠</span>` : '';
+                ? `<span style="color:#c53030; font-size:12px; margin-left:6px; background: #fed7d7; padding: 2px 6px; border-radius: 4px;">優惠</span>` : '';
                 
             orderHTML += `
-                <div class="order-item-row">
-                    <div class="order-item-name">
-                        <span class="qty-badge">${item.quantity}x</span>
-                        ${item.name} ${promoText}
-                    </div>
-                    <div class="order-item-price-col">
-                        <span class="item-price-tag">NT$ ${subtotal}</span>
-                        <button onclick="removeOrderItem(${index}, ${itemIdx})" class="del-btn-small">刪除</button>
-                    </div>
+                <div style="background: white; border: 1px solid #cbd5e0; padding: 8px 12px; border-radius: 8px; display: flex; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                    <span style="color: #2b6cb0; font-weight: bold; font-size: 16px; margin-right: 8px;">${item.quantity}x</span>
+                    <span style="font-size: 16px; color: #2d3748; font-weight: bold;">${item.name}</span>
+                    ${promoText}
+                    <span style="color: #e53e3e; font-weight: bold; margin-left: 10px; margin-right: 10px;">$${subtotal}</span>
+                    <button onclick="removeOrderItem(${index}, ${itemIdx})" style="background: #fc8181; color: white; border: none; border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 13px;">刪除</button>
                 </div>`;
         });
         
@@ -668,15 +662,12 @@ window.addFishToOrder = function(orderIndex) {
     if (isNaN(qty) || qty <= 0) return alert("數量錯誤！");
 
     let order = savedOrders[orderIndex];
-    
-    // 海鮮也執行併單檢查
     let existingItem = order.items.find(i => i.name === type && i.price === price);
     if (existingItem) {
         existingItem.quantity += qty;
     } else {
         order.items.push({ id: "FISH_"+Date.now(), name: type, price: price, quantity: qty });
     }
-    
     db.ref('restaurant_orders').set(savedOrders);
 }
 
@@ -741,6 +732,7 @@ window.deleteOrder = function(index) {
     }
 }
 
+// === 渲染帳本：也套用橫向 Chips 排版 ===
 function renderLedger() {
     const container = document.getElementById('admin-ledger');
     let totalRevenue = 0;
@@ -756,13 +748,19 @@ function renderLedger() {
         totalRevenue += order.total;
         let tableText = order.table ? `<span style="color: #e63946; font-weight: bold; margin-left: 10px;">[桌號: ${order.table}]</span>` : '';
         htmlContent += `<div class="order-card" style="border-left-color: #38a169; background: white;">
-            <h3 style="color: #2f855a; margin-top:0;">✅ 已結帳 ${tableText} <span style="font-size: 13px; color: #888; margin-left: 10px;">(點餐: ${order.time} | 結帳: ${order.paidTime || order.time})</span></h3>
-            <ul style="margin: 5px 0;">`;
+            <h3 style="color: #2f855a; margin-top:0; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">✅ 已結帳 ${tableText} <span style="font-size: 13px; color: #888; margin-left: 10px;">(點餐: ${order.time} | 結帳: ${order.paidTime || order.time})</span></h3>
+            
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0;">`;
+            
         order.items.forEach(item => {
-            htmlContent += `<li>${item.name} x ${item.quantity}</li>`;
+            htmlContent += `<div style="background: #f0fdf4; border: 1px solid #9ae6b4; padding: 6px 12px; border-radius: 6px; font-size: 15px; color: #22543d; display: flex; align-items: center; gap: 6px;">
+                <span style="font-weight: bold; color: #276749;">${item.quantity}x</span> 
+                <span style="font-weight: bold;">${item.name}</span>
+            </div>`;
         });
-        htmlContent += `</ul>
-            <h4 style="margin-bottom:0; color: #22543d;">總額: NT$ ${order.total}</h4>
+        
+        htmlContent += `</div>
+            <h4 style="margin-bottom:0; color: #22543d; text-align: right; font-size: 20px;">總額: NT$ ${order.total}</h4>
         </div>`;
     });
 
@@ -776,9 +774,10 @@ window.clearOrders = function() {
     }
 }
 
+// === 專屬清空密碼改為 0905 ===
 window.clearLedger = function() {
     const pwd = prompt("⚠️ 警告：清空帳本將刪除所有營業額紀錄！請輸入管理員密碼確認：");
-    if (pwd === "0000") {
+    if (pwd === "0905") {
         db.ref('restaurant_ledger').remove().then(() => alert("歷史帳本與營業額已全數清空！"));
     } else if (pwd !== null) {
         alert("密碼錯誤，拒絕清空！");
