@@ -60,7 +60,7 @@
             <button id="ui-back-table" onclick="backToTable()">⬅️ 重新選擇桌號</button>
             <div style="font-size: 20px; font-weight: bold; color: #2b6cb0; display: flex; align-items: center; background: #ebf8ff; padding: 5px 15px; border-radius: 20px; border: 1px solid #bee3f8;">📌 桌號：<span id="current-table-display"></span></div>
             
-            <!-- 🌟 新增：已點餐點按鈕 -->
+            <!-- 已點餐點按鈕 -->
             <button id="ui-submitted-btn" onclick="showSubmittedOrders()" style="background: #2f855a; color: white; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-left: auto; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">📜 已點餐點</button>
         </div>
         
@@ -83,14 +83,14 @@
         </div>
     </div>
 
-    <!-- 🌟 畫面 3.5：已送出餐點 (唯讀防呆畫面) -->
+    <!-- 畫面 3.5：已送出餐點 (唯讀畫面) -->
     <div id="submitted-screen" class="screen" style="display: none;">
         <div class="header">
             <button id="ui-back-menu-submitted" onclick="backToMenuFromSubmitted()">⬅️ 繼續點餐</button>
         </div>
         <h2 id="ui-submitted-title" style="color: #2b6cb0; text-align: center;">已送出的餐點 (無法更改)</h2>
         <div id="submitted-list-container" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); max-width: 600px; margin: 0 auto;">
-            <!-- 這裡會動態顯示已經成功下單的內容 -->
+            <!-- 動態顯示內容 -->
         </div>
     </div>
 
@@ -102,11 +102,13 @@
         </div>
         <h2 id="ui-admin-title">管理員後台</h2>
         
+        <!-- 進行中訂單 (收銀區) -->
         <div class="admin-section">
             <h3 id="ui-order-list-title">📝 進行中訂單 (收銀與加點)</h3>
             <div id="admin-orders"></div>
         </div>
 
+        <!-- 歷史帳本與營業額區塊 -->
         <div class="admin-section" style="background: #f0fdf4; border: 1px solid #c6f6d5;">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #c6f6d5; padding-bottom: 12px; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
                 <h3 style="border: none; padding: 0; margin: 0; color: #22543d;">📔 歷史帳本 (已結帳)</h3>
@@ -202,7 +204,7 @@
 
     </div>
 
-    <!-- 利用隨機參數強迫瀏覽器抓最新 JS -->
-    <script src="script.js?v=999"></script>
+    <!-- 加上時間戳騙過瀏覽器快取 -->
+    <script src="script.js?v=888"></script>
 </body>
 </html>

@@ -34,16 +34,93 @@ const uiTexts = {
         totalText: "總計",
         emptyCart: "購物車是空的喔！",
         requireTable: "請選擇桌號！",
-        orderSuccess: "訂單已送出！老闆已經收到通知囉！"
+        orderSuccess: "訂單已送出！老闆已經收到通知囉！",
+        submittedBtn: "📜 已點紀錄",
+        submittedTitle: "已送出的餐點 (無法更改)",
+        noSubmitted: "目前沒有已送出的餐點喔！"
+    },
+    en: {
+        selectLang: "Select Language",
+        adminLogin: "⚙️ Admin Login",
+        backLang: "⬅️ Back",
+        cartBtn: "🛒 Cart",
+        backMenu: "⬅️ Continue",
+        cartTitle: "Cart (Order Details)",
+        tableLbl: "Table No:",
+        checkoutBtn: "Submit Order",
+        logoutAdmin: "⬅️ Logout & Home",
+        clearOrders: "🗑️ Clear Unpaid",
+        adminTitle: "Admin Dashboard",
+        addMenuTitle: "➕ Add / Edit Dish",
+        manageMenuTitle: "📝 Manage Menu (Edit & Delete)",
+        salesChartTitle: "📊 Sales Statistics",
+        orderListTitle: "📝 Active Orders",
+        allCategory: "All Dishes",
+        qtyText: "Qty:",
+        addCartBtn: "➕ Add to Cart",
+        totalText: "Total",
+        emptyCart: "Cart is empty!",
+        requireTable: "Please enter your table number!",
+        orderSuccess: "Order submitted! Boss notified!",
+        submittedBtn: "📜 Ordered Items",
+        submittedTitle: "Submitted Orders (Read-only)",
+        noSubmitted: "No submitted orders yet!"
+    },
+    jp: {
+        selectLang: "言語を選択してください / Select Language",
+        adminLogin: "⚙️ 管理者ログイン",
+        backLang: "⬅️ 戻る",
+        cartBtn: "🛒 カート",
+        backMenu: "⬅️ 注文続行",
+        cartTitle: "カート (注文詳細)",
+        tableLbl: "テーブル番号:",
+        checkoutBtn: "注文を送信",
+        logoutAdmin: "⬅️ ログアウト",
+        clearOrders: "🗑️ 未会計をクリア",
+        adminTitle: "管理者画面",
+        addMenuTitle: "➕ 新規追加 / 編集",
+        manageMenuTitle: "📝 メニュー管理 (編集・削除)",
+        salesChartTitle: "📊 売上統計",
+        orderListTitle: "📝 進行中の注文",
+        allCategory: "すべて",
+        qtyText: "数量:",
+        addCartBtn: "🛒 カートに追加",
+        totalText: "合計",
+        emptyCart: "カートは空です！",
+        requireTable: "テーブルを選択してください！",
+        orderSent: "注文を送信しました！",
+        submittedBtn: "📜 注文履歴",
+        submittedTitle: "送信済みの注文 (変更不可)",
+        noSubmitted: "まだ注文がありません！"
+    },
+    kr: {
+        selectLang: "언어 선택 / Select Language",
+        adminLogin: "⚙️ 관리자 로그인",
+        backLang: "⬅️ 뒤로",
+        cartBtn: "🛒 장바구니",
+        backMenu: "⬅️ 계속 주문",
+        cartTitle: "장바구니 (주문 상세)",
+        tableLbl: "테이블 번호:",
+        checkoutBtn: "주문하기",
+        logoutAdmin: "⬅️ 로그아웃",
+        clearOrders: "🗑️ 미결제 삭제",
+        adminTitle: "관리자 대시보드",
+        addMenuTitle: "➕ 메뉴 추가 / 수정",
+        manageMenuTitle: "📝 메뉴 관리 (수정 및 삭제)",
+        salesChartTitle: "📊 판매 통계",
+        orderListTitle: "📝 진행 중인 주문",
+        allCategory: "전체 메뉴",
+        qtyText: "수량:",
+        addCartBtn: "➕ 장바구니 담기",
+        totalText: "합계",
+        emptyCart: "장바구니가 비어 있습니다!",
+        requireTable: "테이블을 선택해주세요!",
+        orderSent: "주문이 완료되었습니다!",
+        submittedBtn: "📜 주문 내역",
+        submittedTitle: "제출된 주문 (변경 불가)",
+        noSubmitted: "아직 제출된 주문이 없습니다!"
     }
-    // ... 其他語系保留不變，為節省空間先省略，這不影響功能 ...
 };
-// 若你需要完整多語系，這段維持舊有的 en, jp, kr 即可，這裡預設中文
-if (!uiTexts.en) {
-    uiTexts.en = uiTexts.zh;
-    uiTexts.jp = uiTexts.zh;
-    uiTexts.kr = uiTexts.zh;
-}
 
 const categoriesMap = {
     "涼拌": { zh: "涼拌", en: "Cold Dishes", jp: "冷菜", kr: "냉채" },
@@ -66,15 +143,6 @@ let editingItemId = null;
 let cart = []; 
 let salesChartInstance = null; 
 
-window.calculateItemSubtotal = function(item) {
-    if (item.name.includes("特別酒類") && item.price === 100) {
-        let promoSets = Math.floor(item.quantity / 3); 
-        let remainder = item.quantity % 3;             
-        return (promoSets * 200) + (remainder * 100);
-    }
-    return item.price * item.quantity;
-};
-
 window.calculateOrderTotal = function(items) {
     let total = 0;
     let specialWineCount = 0;
@@ -86,10 +154,10 @@ window.calculateOrderTotal = function(items) {
         total += item.price * item.quantity; 
     });
     
-    // 折抵邏輯 (每3瓶扣100)
     if (specialWineCount >= 3) {
         let promoSets = Math.floor(specialWineCount / 3);
-        total -= (promoSets * 100);
+        let discount = promoSets * 100;
+        total -= discount;
     }
     return total;
 };
@@ -190,6 +258,8 @@ window.confirmTable = function() {
 }
 
 window.backToTable = function() {
+    currentTable = ''; // 確實清空桌號
+    document.getElementById('table-select').value = '';
     document.getElementById('menu-screen').style.display = 'none';
     document.getElementById('table-screen').style.display = 'block';
 }
@@ -221,10 +291,63 @@ function updateUITexts() {
     document.getElementById('ui-manage-menu-title').innerText = t.manageMenuTitle;
     document.getElementById('ui-sales-chart-title').innerText = t.salesChartTitle;
     document.getElementById('ui-order-list-title').innerText = t.orderListTitle;
+
+    // 翻譯「已點餐點」區塊
+    if(document.getElementById('ui-submitted-btn')) document.getElementById('ui-submitted-btn').innerHTML = `📜 ${t.submittedBtn}`;
+    if(document.getElementById('ui-submitted-title')) document.getElementById('ui-submitted-title').innerText = t.submittedTitle;
+    if(document.getElementById('ui-back-menu-submitted')) document.getElementById('ui-back-menu-submitted').innerText = t.backMenu;
 }
 
 function backToMenu() {
     document.getElementById('cart-screen').style.display = 'none';
+    document.getElementById('menu-screen').style.display = 'block';
+}
+
+// === 顯示「已點餐點」明細 ===
+window.showSubmittedOrders = function() {
+    document.getElementById('menu-screen').style.display = 'none';
+    document.getElementById('submitted-screen').style.display = 'block';
+    
+    const container = document.getElementById('submitted-list-container');
+    const tableOrder = savedOrders.find(o => o.table === currentTable);
+    
+    if (!tableOrder || !tableOrder.items || tableOrder.items.length === 0) {
+        container.innerHTML = `<p style="text-align: center; color: #718096; font-size: 18px; padding: 20px;">${uiTexts[currentLang].noSubmitted}</p>`;
+        return;
+    }
+
+    let html = `<ul style="list-style: none; padding: 0; margin: 0;">`;
+    let specialWineCount = 0;
+
+    tableOrder.items.forEach(item => {
+        if (item.name.includes("特別酒類") && item.price === 100) specialWineCount += item.quantity;
+        let subtotal = item.price * item.quantity;
+        
+        let timeTag = item.addTime ? `<span style="font-size: 13px; color: #a0aec0; margin-left: 6px;">(${item.addTime})</span>` : '';
+        let addOnTag = item.isAddOn ? `<span style="font-size: 13px; color: #dd6b20; margin-left: 6px;">[加點]</span>` : '';
+        
+        html += `<li style="padding: 12px 0; border-bottom: 1px solid #edf2f7; display: flex; justify-content: space-between; align-items: center; font-size: 18px;">
+            <div>
+                <span style="color: #2b6cb0; font-weight: bold; margin-right: 10px;">${item.quantity}x</span> 
+                <span style="color: #2d3748; font-weight: 500;">${item.name}</span>
+                ${addOnTag} ${timeTag}
+            </div>
+            <div style="font-weight: bold; color: #4a5568;">NT$ ${subtotal}</div>
+        </li>`;
+    });
+    html += `</ul>`;
+
+    if (specialWineCount >= 3) {
+        let discount = Math.floor(specialWineCount / 3) * 100;
+        html += `<div style="text-align: right; color: #e53e3e; font-weight: bold; font-size: 16px; margin-top: 15px;">🎉 促銷折抵: -NT$ ${discount}</div>`;
+    }
+
+    html += `<h3 style="text-align: right; color: #e63946; margin-top: 15px; border-top: 2px solid #e2e8f0; padding-top: 15px; font-size: 22px;">總計: NT$ ${tableOrder.total}</h3>`;
+    container.innerHTML = html;
+}
+
+window.backToMenuFromSubmitted = function() {
+    document.getElementById('submitted-screen').style.display = 'none';
     document.getElementById('menu-screen').style.display = 'block';
 }
 
@@ -263,8 +386,15 @@ function renderFilteredMenu() {
 
     let finalHTML = ''; 
     filteredItems.forEach(item => {
-        let primaryName = item.name_zh;
-        let primaryDesc = item.desc_zh;
+        let dbName = item[`name_${currentLang}`];
+        let primaryName = (currentLang === 'zh') ? item.name_zh : 
+                          ((dbName && dbName.trim() !== "" && dbName !== item.name_zh) ? dbName : fallbackTranslate(item.name_zh, currentLang));
+        let secondaryName = (currentLang !== 'zh') ? `(${item.name_zh})` : '';
+
+        let dbDesc = item[`desc_${currentLang}`];
+        let primaryDesc = (currentLang === 'zh') ? item.desc_zh : 
+                          ((dbDesc && dbDesc.trim() !== "" && dbDesc !== item.desc_zh) ? dbDesc : fallbackTranslate(item.desc_zh, currentLang));
+        let secondaryDesc = (currentLang !== 'zh') ? `(${item.desc_zh})` : '';
 
         finalHTML += `
             <div class="menu-item">
@@ -272,8 +402,9 @@ function renderFilteredMenu() {
                 <div class="menu-info">
                     <div class="dish-title-container">
                         <h2 class="dish-main-name">${primaryName}</h2>
+                        ${secondaryName ? `<span class="dish-sub-name">${secondaryName}</span>` : ''}
                     </div>
-                    <p class="dish-desc">${primaryDesc}</p>
+                    <p class="dish-desc">${primaryDesc} ${secondaryDesc ? `<br><small style="color:#888;">${secondaryDesc}</small>` : ''}</p>
                     <div class="price">NT$ ${item.price}</div>
                     
                     <div class="add-action">
@@ -315,16 +446,19 @@ window.showCart = function() {
     const cartList = document.getElementById('cart-list');
     let cartHTML = '';
 
-    let total = calculateOrderTotal(cart);
-    let specialWineCount = cart.reduce((sum, item) => (item.name.includes("特別酒類") && item.price === 100) ? sum + item.quantity : sum, 0);
-
+    let total = 0;
+    let specialWineCount = 0;
+    
     cart.forEach(cartItem => {
+        if (cartItem.name.includes("特別酒類") && cartItem.price === 100) specialWineCount += cartItem.quantity;
         let subtotal = cartItem.price * cartItem.quantity;
+        total += subtotal;
         cartHTML += `<li>${cartItem.name} x ${cartItem.quantity}份 - NT$ ${subtotal}</li>`;
     });
     
     if (specialWineCount >= 3) {
         let discount = Math.floor(specialWineCount / 3) * 100;
+        total -= discount;
         cartHTML += `<li style="color:#e63946; list-style-type: none; font-weight: bold; margin-top: 10px;">🎉 促銷折抵 (特別酒類3瓶200): -NT$ ${discount}</li>`;
     }
 
@@ -337,11 +471,11 @@ window.checkout = function() {
     if (!currentTable) return alert(uiTexts[currentLang].requireTable);
     
     const existingOrderIndex = savedOrders.findIndex(order => order.table === currentTable);
-    let currentTime = new Date().toLocaleTimeString('zh-TW'); // 取得現在加點時間 (如: 下午12:15:30)
+    let currentTime = new Date().toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
 
     if (existingOrderIndex !== -1) {
         let existingOrder = savedOrders[existingOrderIndex];
-        // 前台加點：一律標記為加點屬性，絕對不與原餐點疊加
+        // 一律標記為加點屬性，不疊加
         cart.forEach(cartItem => {
             existingOrder.items.push({ ...cartItem, isAddOn: true, addTime: currentTime });  
         });
@@ -351,7 +485,7 @@ window.checkout = function() {
         const newOrder = {
             time: new Date().toLocaleString(),
             table: currentTable, 
-            items: cart.map(i => ({...i, isAddOn: false})), // 原始點餐
+            items: cart.map(i => ({...i, isAddOn: false})), 
             total: calculateOrderTotal(cart)
         };
         savedOrders.push(newOrder);
@@ -361,10 +495,10 @@ window.checkout = function() {
         alert(uiTexts[currentLang].orderSuccess);
         cart = []; 
         updateCartCount();
-        currentTable = ""; 
-        document.getElementById('table-select').value = ""; 
+        
+        // 🌟 留在點單頁面，不清除 currentTable，方便客人直接按「已點餐點」查看
         document.getElementById('cart-screen').style.display = 'none';
-        document.getElementById('lang-screen').style.display = 'block'; 
+        document.getElementById('menu-screen').style.display = 'block'; 
     }).catch(error => alert("連線失敗：" + error));
 }
 
@@ -385,7 +519,6 @@ window.logoutAdmin = function() {
     document.getElementById('lang-screen').style.display = 'block';
 }
 
-// === 🚀 核心升級：水平延伸的多欄式排版 (加點一直往右長) ===
 function renderAdminOrders() {
     const container = document.getElementById('admin-orders');
     if (savedOrders.length === 0) {
@@ -405,14 +538,13 @@ function renderAdminOrders() {
             </div>`;
             
         let originalItemsHTML = '';
-        let addOnGroups = {}; // 用時間來分組加點欄位
+        let addOnGroups = {}; 
         let specialWineCount = 0;
 
         order.items.forEach((item, itemIdx) => {
             if (item.name.includes("特別酒類") && item.price === 100) specialWineCount += item.quantity;
             let subtotal = item.price * item.quantity; 
 
-            // 生成直式的單一列 HTML
             let itemRow = `
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed #cbd5e0;">
                     <div style="font-size: 17px; color: #2d3748; font-weight: 500; display: flex; align-items: center;">
@@ -426,7 +558,6 @@ function renderAdminOrders() {
                 </div>`;
 
             if (item.isAddOn) {
-                // 有加點屬性，依照它的點餐時間丟進專屬的陣列
                 let timeKey = item.addTime || '時間未知';
                 if (!addOnGroups[timeKey]) addOnGroups[timeKey] = [];
                 addOnGroups[timeKey].push(itemRow);
@@ -435,16 +566,14 @@ function renderAdminOrders() {
             }
         });
 
-        // == 橫向捲動容器 (讓新加點不斷往右邊生長) ==
+        // == 橫向往右長的多欄排版 ==
         orderHTML += `
         <div style="display: flex; gap: 20px; margin-bottom: 15px; overflow-x: auto; padding-bottom: 10px;">
-            <!-- 第一欄：原始餐點 -->
             <div style="min-width: 320px; flex-shrink: 0; background: #faf8f5; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; align-self: flex-start;">
                 <h4 style="margin: 0 0 10px 0; color: #4a5568; border-bottom: 2px solid #edf2f7; padding-bottom: 8px; font-size: 18px;">🧾 原始餐點</h4>
                 ${originalItemsHTML || '<p style="color:#a0aec0; font-size:15px; margin:0;">無</p>'}
             </div>`;
 
-        // == 迴圈產生後續的加點欄位 (由左至右排列) ==
         Object.keys(addOnGroups).forEach(timeKey => {
             orderHTML += `
             <div style="min-width: 320px; flex-shrink: 0; background: #fffaf0; padding: 15px; border-radius: 8px; border: 1px dashed #ecc94b; align-self: flex-start;">
@@ -452,7 +581,7 @@ function renderAdminOrders() {
                 ${addOnGroups[timeKey].join('')}
             </div>`;
         });
-        orderHTML += `</div>`; // 橫向容器結束
+        orderHTML += `</div>`; 
 
         if (specialWineCount >= 3) {
             let discount = Math.floor(specialWineCount / 3) * 100;
@@ -460,7 +589,6 @@ function renderAdminOrders() {
         }
             
         orderHTML += `
-            <!-- 臨時加點面板 -->
             <div id="quick-add-${index}" style="display:none; background: #fffaf0; border: 1px dashed #ecc94b; padding: 15px; margin-top: 15px; border-radius: 8px;">
                 <h4 style="margin-top:0; color:#b7791f; font-size: 16px;">⚡ 快速加點區 (海鮮/酒水)</h4>
                 
@@ -494,7 +622,6 @@ function renderAdminOrders() {
                 </div>
             </div>
 
-            <!-- 收銀機區塊 -->
             <div style="background: #f0fdf4; padding: 20px; margin-top: 15px; border-radius: 8px; border: 1px solid #9ae6b4;">
                 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap: wrap; gap:15px; margin-bottom: 15px;">
                     <span style="font-size:22px; font-weight:bold; color: #2d3748;">應收總額: <span style="color:#e53e3e;">NT$ ${order.total}</span></span>
@@ -520,7 +647,6 @@ function renderAdminOrders() {
 window.calcChange = function(index, total) {
     const received = parseInt(document.getElementById(`cash-received-${index}`).value);
     const changeDisplay = document.getElementById(`change-display-${index}`);
-    
     if (isNaN(received)) {
         changeDisplay.innerText = "NT$ 0";
         changeDisplay.style.color = "#276749";
@@ -550,9 +676,7 @@ window.addFishToOrder = function(orderIndex) {
     if (isNaN(qty) || qty <= 0) return alert("數量錯誤！");
 
     let order = savedOrders[orderIndex];
-    let currentTime = new Date().toLocaleTimeString('zh-TW'); // 取得加點的當下時間
-    
-    // 直接推入新的陣列元素，成為新的一欄 (不作合併檢查)
+    let currentTime = new Date().toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
     order.items.push({ id: "FISH_"+Date.now(), name: type, price: price, quantity: qty, isAddOn: true, addTime: currentTime });
     db.ref('restaurant_orders').set(savedOrders);
 }
@@ -566,8 +690,7 @@ window.addBevToOrder = function(orderIndex) {
     if (isNaN(qty) || qty <= 0) return alert("數量錯誤！");
 
     let order = savedOrders[orderIndex];
-    let currentTime = new Date().toLocaleTimeString('zh-TW');
-
+    let currentTime = new Date().toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit' });
     order.items.push({ id: "BEV_"+Date.now(), name: name, price: price, quantity: qty, isAddOn: true, addTime: currentTime });
     db.ref('restaurant_orders').set(savedOrders);
 }
@@ -591,10 +714,7 @@ window.completeOrder = function(index) {
     const receivedInput = document.getElementById(`cash-received-${index}`);
     if (receivedInput && receivedInput.value) {
         const received = parseInt(receivedInput.value);
-        if (received < orderToMove.total) {
-            alert("⚠️ 實收金額不足，請確認後再結帳！");
-            return;
-        }
+        if (received < orderToMove.total) return alert("⚠️ 實收金額不足，請確認後再結帳！");
     }
 
     if (confirm(`確認結帳總金額 NT$ ${orderToMove.total}，並記入歷史帳本嗎？`)) {
@@ -610,13 +730,10 @@ window.completeOrder = function(index) {
 window.deleteOrder = function(index) {
     if (confirm(`確定要取消「訂單編號 #${index + 1}」嗎？這將不會記錄到帳本中。`)) {
         savedOrders.splice(index, 1);
-        db.ref('restaurant_orders').set(savedOrders).then(() => {
-            alert("已取消該筆訂單！");
-        });
+        db.ref('restaurant_orders').set(savedOrders).then(() => alert("已取消該筆訂單！"));
     }
 }
 
-// === 渲染歷史帳本：套用相同橫向多欄排版 ===
 function renderLedger() {
     const container = document.getElementById('admin-ledger');
     let totalRevenue = 0;
@@ -634,9 +751,9 @@ function renderLedger() {
         htmlContent += `<div class="order-card" style="border-top: 5px solid #38a169; background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.08);">
             <h3 style="color: #2f855a; margin-top:0; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">✅ 已結帳 ${tableText} <span style="font-size: 13px; color: #888; margin-left: 10px;">(結帳: ${order.paidTime || order.time})</span></h3>`;
             
+        let specialWineCount = 0;
         let originalItemsHTML = '';
         let addOnGroups = {};
-        let specialWineCount = 0;
 
         order.items.forEach(item => {
             if (item.name.includes("特別酒類") && item.price === 100) specialWineCount += item.quantity;
@@ -692,14 +809,11 @@ window.clearOrders = function() {
     }
 }
 
-// === 將清空帳本密碼更新為 0905 ===
 window.clearLedger = function() {
     const pwd = prompt("⚠️ 警告：清空帳本將刪除所有營業額紀錄！請輸入老闆專屬密碼確認：");
     if (pwd === "0905") {
         db.ref('restaurant_ledger').remove().then(() => alert("歷史帳本與營業額已全數清空！"));
-    } else if (pwd !== null) {
-        alert("密碼錯誤，拒絕清空！");
-    }
+    } else if (pwd !== null) alert("密碼錯誤，拒絕清空！");
 }
 
 function renderSalesChart() {
@@ -717,41 +831,24 @@ function renderSalesChart() {
     if (salesChartInstance) salesChartInstance.destroy();
 
     salesChartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: '總銷售數量 (依已結帳計算)',
-                data: data,
-                backgroundColor: 'rgba(56, 161, 105, 0.6)',
-                borderColor: 'rgba(56, 161, 105, 1)',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-        }
+        type: 'bar', data: { labels: labels, datasets: [{ label: '總銷售數量 (依已結帳計算)', data: data, backgroundColor: 'rgba(56, 161, 105, 0.6)', borderColor: 'rgba(56, 161, 105, 1)', borderWidth: 1 }] },
+        options: { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
     });
 }
 
 function renderAdminMenu() {
     const container = document.getElementById('admin-menu-list');
-    if (menuData.length === 0) {
-        container.innerHTML = "<p>目前沒有任何餐點。</p>";
-        return;
-    }
+    if (menuData.length === 0) return container.innerHTML = "<p>目前沒有任何餐點。</p>";
     
     let htmlContent = '';
     menuData.forEach((item, index) => {
-        htmlContent += `
-            <div class="admin-menu-item">
-                <span>[${item.category || '未分類'}] ${item.name_zh} (NT$ ${item.price})</span>
-                <div class="admin-menu-actions">
-                    <button class="edit-btn" onclick="editMenuItem('${item.id}')">✏️ 編輯餐點</button>
-                    <button class="delete-btn" onclick="deleteMenuItem(${index})">🗑️ 刪除</button>
-                </div>
+        htmlContent += `<div class="admin-menu-item">
+            <span>[${item.category || '未分類'}] ${item.name_zh} (NT$ ${item.price})</span>
+            <div class="admin-menu-actions">
+                <button class="edit-btn" onclick="editMenuItem('${item.id}')">✏️ 編輯餐點</button>
+                <button class="delete-btn" onclick="deleteMenuItem(${index})">🗑️ 刪除</button>
             </div>
-        `;
+        </div>`;
     });
     container.innerHTML = htmlContent;
 }
@@ -776,7 +873,6 @@ window.editMenuItem = function(itemId) {
     const saveBtn = document.getElementById('ui-save-btn');
     saveBtn.innerText = "確認修改餐點";
     saveBtn.style.background = "#d69e2e";
-
     document.getElementById('ui-cancel-btn').style.display = "block";
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -797,16 +893,13 @@ window.cancelEdit = function() {
     const saveBtn = document.getElementById('ui-save-btn');
     saveBtn.innerText = "儲存新餐點";
     saveBtn.style.background = "#007BFF";
-
     document.getElementById('ui-cancel-btn').style.display = "none";
 }
 
 window.deleteMenuItem = function(index) {
     if (confirm("確定要刪除這道餐點嗎？")) {
         menuData.splice(index, 1);
-        db.ref('restaurant_menu').set(menuData).then(() => {
-            alert("已成功刪除！");
-        }).catch(err => alert("刪除失敗：" + err));
+        db.ref('restaurant_menu').set(menuData).then(() => alert("已成功刪除！")).catch(err => alert("刪除失敗：" + err));
     }
 }
 
@@ -819,10 +912,7 @@ window.compressAllOldImages = async function() {
     try {
         const compressPromise = (item) => {
             return new Promise((resolve) => {
-                if (!item.image_url || !item.image_url.startsWith('data:image') || item.image_url.length < 100000) {
-                    resolve(item);
-                    return;
-                }
+                if (!item.image_url || !item.image_url.startsWith('data:image') || item.image_url.length < 100000) return resolve(item);
                 const img = new Image();
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
