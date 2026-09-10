@@ -24,7 +24,7 @@
         <button class="admin-login-btn" id="ui-admin-login" onclick="adminLogin()">⚙️ 管理員登入</button>
     </div>
 
-    <!-- 畫面 1.5：選擇桌號 (全新加入) -->
+    <!-- 畫面 1.5：選擇桌號 -->
     <div id="table-screen" class="screen" style="display: none;">
         <div class="header">
             <button id="ui-back-lang-from-table" onclick="backToLangFromTable()">⬅️ 返回語言選擇</button>
@@ -56,17 +56,17 @@
 
     <!-- 畫面二：點餐畫面 -->
     <div id="menu-screen" class="screen" style="display: none;">
-        <div class="header">
+        <div class="header" style="align-items: center; flex-wrap: wrap; gap: 10px;">
             <button id="ui-back-table" onclick="backToTable()">⬅️ 重新選擇桌號</button>
             <div style="font-size: 20px; font-weight: bold; color: #2b6cb0; display: flex; align-items: center; background: #ebf8ff; padding: 5px 15px; border-radius: 20px; border: 1px solid #bee3f8;">📌 桌號：<span id="current-table-display"></span></div>
+            
+            <!-- 🌟 新增：已點餐點按鈕 -->
+            <button id="ui-submitted-btn" onclick="showSubmittedOrders()" style="background: #2f855a; color: white; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-left: auto; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">📜 已點餐點</button>
         </div>
         
-        <!-- 左右滑動分類列 -->
         <div class="category-scroll-container" id="category-scroll"></div>
-
         <div id="menu-container"></div>
         
-        <!-- 永遠懸浮在右下角的購物車按鈕 -->
         <button id="ui-cart-btn" class="floating-cart-btn" onclick="showCart()">🛒 購物車 (<span id="cart-count">0</span>)</button>
     </div>
 
@@ -78,9 +78,19 @@
         <h2 id="ui-cart-title">購物車 (訂單明細)</h2>
         <ul id="cart-list" style="margin-bottom: 25px;"></ul>
         
-        <!-- 結帳按鈕直接送出 (桌號已在前面選過) -->
         <div class="cart-actions">
             <button id="ui-checkout-btn" onclick="checkout()" style="background: #e63946; color: white; font-size: 20px; padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; width: 100%;">送出訂單</button>
+        </div>
+    </div>
+
+    <!-- 🌟 畫面 3.5：已送出餐點 (唯讀防呆畫面) -->
+    <div id="submitted-screen" class="screen" style="display: none;">
+        <div class="header">
+            <button id="ui-back-menu-submitted" onclick="backToMenuFromSubmitted()">⬅️ 繼續點餐</button>
+        </div>
+        <h2 id="ui-submitted-title" style="color: #2b6cb0; text-align: center;">已送出的餐點 (無法更改)</h2>
+        <div id="submitted-list-container" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); max-width: 600px; margin: 0 auto;">
+            <!-- 這裡會動態顯示已經成功下單的內容 -->
         </div>
     </div>
 
@@ -92,13 +102,11 @@
         </div>
         <h2 id="ui-admin-title">管理員後台</h2>
         
-        <!-- 進行中訂單 (收銀區) -->
         <div class="admin-section">
             <h3 id="ui-order-list-title">📝 進行中訂單 (收銀與加點)</h3>
             <div id="admin-orders"></div>
         </div>
 
-        <!-- 歷史帳本與營業額區塊 -->
         <div class="admin-section" style="background: #f0fdf4; border: 1px solid #c6f6d5;">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #c6f6d5; padding-bottom: 12px; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
                 <h3 style="border: none; padding: 0; margin: 0; color: #22543d;">📔 歷史帳本 (已結帳)</h3>
@@ -108,7 +116,6 @@
             <div id="admin-ledger"></div>
         </div>
 
-        <!-- 銷售統計 (改為統計已結帳) -->
         <div class="admin-section">
             <h3 id="ui-sales-chart-title">📊 銷售數量統計</h3>
             <div class="chart-container">
@@ -116,7 +123,6 @@
             </div>
         </div>
 
-        <!-- 餐點管理 -->
         <div class="admin-section">
             <h3 id="ui-add-menu-title">➕ 新增 / 編輯餐點</h3>
             <div class="add-item-form">
@@ -196,6 +202,7 @@
 
     </div>
 
-<script src="script.js?v=999"></script>
+    <!-- 利用隨機參數強迫瀏覽器抓最新 JS -->
+    <script src="script.js?v=999"></script>
 </body>
 </html>
